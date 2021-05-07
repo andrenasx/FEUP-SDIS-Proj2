@@ -1,8 +1,10 @@
 # SDIS Project
 
-SDIS Project for group T&lt;n&gt;G&lt;p&gt;&lt;q&gt;.
+SDIS Project for group T4G22.
 
 Group members:
 
-1. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-2. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
+1. André Nascimento (up201806461@edu.up.pt)
+2. Gustavo Sena (up201806078@edu.up.pt)
+3. Luís Recharte (up201806743@edu.up.pt)
+4. Rodrigo Reis (up201806534@edu.up.pt)
