@@ -7,10 +7,10 @@ import java.rmi.registry.Registry;
 
 public class TestApp {
     public static void main(String[] args) {
-        if (args.length < 2 || args.length > 4) {
+        /*if (args.length < 2 || args.length > 4) {
             System.out.println("Usage: java TestApp <peer_ap> <sub_protocol> <opnd_1> <opnd_2>");
             return;
-        }
+        }*/
 
         String serviceAccessPoint = args[0];
         String protocol = args[1].toUpperCase();
@@ -77,11 +77,15 @@ public class TestApp {
 
                     break;
                 }
+                case "SEND": {
+                    peer.send(args[2], Integer.parseInt(args[3]), args[4]);
+                    break;
+                }
                 default:
                     throw new Exception("Unknown protocol");
             }
         } catch (Exception e) {
-            System.err.println("TestApp exception: " + e.toString());
+            System.err.println("TestApp exception: " + e.getMessage());
         }
     }
 }

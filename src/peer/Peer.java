@@ -199,4 +199,9 @@ public class Peer implements PeerInit {
     public String state() throws RemoteException {
         return this.storage.toString();
     }
+
+    @Override
+    public void send(String host, int port, String message) {
+
+    }
 }

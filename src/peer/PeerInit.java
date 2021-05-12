@@ -13,4 +13,6 @@ public interface PeerInit extends Remote {
     void reclaim(double diskspace) throws RemoteException;
 
     String state() throws RemoteException;
+
+    void send(String host, int port, String message) throws RemoteException;
 }
