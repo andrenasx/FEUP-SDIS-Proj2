@@ -1,6 +1,6 @@
 package test;
 
-import chord.PeerInit;
+import peer.PeerInit;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
