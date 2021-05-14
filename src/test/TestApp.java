@@ -1,6 +1,6 @@
 package test;
 
-import chord.PeerInit;
+import peer.PeerInit;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -75,10 +75,6 @@ public class TestApp {
 
                     System.out.println(peer.state());
 
-                    break;
-                }
-                case "SEND": {
-                    peer.send(args[2], Integer.parseInt(args[3]), args[4]);
                     break;
                 }
                 default:

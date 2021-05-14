@@ -20,16 +20,11 @@ import java.nio.channels.SocketChannel;
  * @author <a href="mailto:alex.a.karnezis@gmail.com">Alex Karnezis</a>
  */
 public class SSLEngineClient extends SSLEngineComms {
-	
-    /**
-     * The remote address of the server this client is configured to connect to.
-     */
-	private String remoteAddress;
 
-	/**
-	 * The port of the server this client is configured to connect to.
-	 */
-	private int port;
+    /**
+     * The socket of the server this client is configured to connect to.
+     */
+	private InetSocketAddress socketAddress;
 
 	/**
 	 * The engine that will be used to encrypt/decrypt data between this client and the server.
@@ -46,15 +41,13 @@ public class SSLEngineClient extends SSLEngineComms {
      * Initiates the engine to run as a client using peer information, and allocates space for the
      * buffers that will be used by the engine.
      *
-     * @param remoteAddress The IP address of the peer.
-     * @param port The peer's port that will be used.
+     * @param socketAddress The socket address of the server.
      * @throws Exception
      */
-    public SSLEngineClient(SSLContext context, String remoteAddress, int port) throws Exception  {
-    	this.remoteAddress = remoteAddress;
-    	this.port = port;
+    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress) throws Exception  {
+    	this.socketAddress = socketAddress;
 
-        engine = context.createSSLEngine(remoteAddress, port);
+        engine = context.createSSLEngine(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
         engine.setUseClientMode(true);
 
         SSLSession session = engine.getSession();
@@ -73,7 +66,7 @@ public class SSLEngineClient extends SSLEngineComms {
     public boolean connect() throws Exception {
     	socketChannel = SocketChannel.open();
     	socketChannel.configureBlocking(false);
-    	socketChannel.connect(new InetSocketAddress(remoteAddress, port));
+    	socketChannel.connect(this.socketAddress);
     	while (!socketChannel.finishConnect()) {
     		// can do something here...
     	}
@@ -88,7 +81,7 @@ public class SSLEngineClient extends SSLEngineComms {
      * @param message - message to be sent to the server.
      * @throws IOException if an I/O error occurs to the socket channel.
      */
-    public void write(String message) throws IOException {
+    public void write(byte[] message) throws IOException {
         System.out.println("Client about to write data");
         write(socketChannel, engine, message);
     }
@@ -98,10 +91,10 @@ public class SSLEngineClient extends SSLEngineComms {
      *
      * @throws Exception
      */
-    public String read() throws Exception {
+    public byte[] read() throws Exception {
         System.out.println("Client about to read data");
 
-        String message = null;
+        byte[] message = null;
         while (message == null) {
             message = read(socketChannel, engine);
         }
@@ -114,11 +107,9 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws IOException if an I/O error occurs to the socket channel.
      */
     public void shutdown() throws IOException {
-        //log.debug("About to close connection with the server...");
         System.out.println("About to close connection with the server...");
         closeConnection(socketChannel, engine);
         executor.shutdown();
-        //log.debug("Goodbye!");
         System.out.println("Goodbye from Client!");
     }
 

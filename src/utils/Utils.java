@@ -11,9 +11,9 @@ public abstract class Utils {
     public static int generateId(InetSocketAddress socketAddress){
         String toHash = socketAddress.getAddress().getHostAddress() + "-" + socketAddress.getPort();
         MessageDigest messageDigest;
-        try{
+        try {
             messageDigest = MessageDigest.getInstance("SHA-1");
-        }catch(NoSuchAlgorithmException e){
+        } catch(NoSuchAlgorithmException e) {
             return -1;
         }
 

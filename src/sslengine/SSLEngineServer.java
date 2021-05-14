@@ -1,9 +1,14 @@
 package sslengine;
 
+import chord.ChordNode;
+import messages.ChordMessage;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -11,6 +16,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * An SSL/TLS server, that will listen to a specific address and port and serve SSL/TLS connections
@@ -23,8 +30,6 @@ import java.util.Iterator;
  * </p>
  * NioSslServer makes use of Java NIO, and specifically listens to new connection requests with a {@link ServerSocketChannel}, which will
  * create new {@link SocketChannel}s and a {@link Selector} which serves all the connections in one thread.
- *
- * @author <a href="mailto:alex.a.karnezis@gmail.com">Alex Karnezis</a>
  */
 public class SSLEngineServer extends SSLEngineComms {
 	
@@ -44,15 +49,17 @@ public class SSLEngineServer extends SSLEngineComms {
      */
     private Selector selector;
 
+    private SocketAddress socketAddress;
+
+    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
     /**
      * Server is designed to apply an SSL/TLS protocol and listen to an IP address and port.
      *
-     * @param hostAddress - the IP address this server will listen to.
-     * @param port - the port this server will listen to.
+     * @param socketAddress - the address this server will listen to.
      * @throws Exception
      */
-    public SSLEngineServer(SSLContext context, String hostAddress, int port) throws Exception {
+    public SSLEngineServer(SSLContext context, InetSocketAddress socketAddress) throws Exception {
         this.context = context;
 
         SSLSession dummySession = context.createSSLEngine().getSession();
@@ -66,8 +73,10 @@ public class SSLEngineServer extends SSLEngineComms {
         selector = SelectorProvider.provider().openSelector();
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.socket().bind(new InetSocketAddress(hostAddress, port));
+        serverSocketChannel.socket().bind(socketAddress);
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        this.socketAddress = serverSocketChannel.socket().getLocalSocketAddress();
         
         active = true;
     }
@@ -81,7 +90,6 @@ public class SSLEngineServer extends SSLEngineComms {
      * @throws Exception
      */
     public void start() throws Exception {
-    	//log.debug("Initialized and waiting for new connections...");
         System.out.println("Initialized and waiting for new connections...");
 
         while (isActive()) {
@@ -98,17 +106,25 @@ public class SSLEngineServer extends SSLEngineComms {
                 } else if (key.isReadable()) {
                     SocketChannel channel = (SocketChannel) key.channel();
                     SSLEngine engine = (SSLEngine) key.attachment();
-                    System.out.println("Server about to read data");
-                    String message = read(channel, engine);
-                    if (message != null) {
-                        System.out.println("Server about to write data");
-                        write(channel, engine, "Hello from server");
+                    //System.out.println("Server about to read data");
+
+                    // read data and create ChordMessage
+                    byte[] data = read(channel, engine);
+
+                    // data is null if error or end of connection
+                    if (data != null) {
+                        try {
+                            ChordMessage request = ChordMessage.create(data);
+                            System.out.println("Server received: " + request);
+                            this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
+                        } catch (Exception e) {
+                            System.out.println("Couldn't parse request message");
+                        }
                     }
                 }
             }
         }
         
-        //log.debug("Goodbye!");
         System.out.println("Goodbye from Server!");
     }
     
@@ -117,7 +133,6 @@ public class SSLEngineServer extends SSLEngineComms {
      * and also wakes up the selector, which may be in select() blocking state.
      */
     public void stop() {
-    	//log.debug("Will now close server...");
         System.out.println("Will now close server...");
     	active = false;
     	executor.shutdown();
@@ -133,7 +148,6 @@ public class SSLEngineServer extends SSLEngineComms {
      * @throws Exception
      */
     private void accept(SelectionKey key) throws Exception {
-    	//log.debug("New connection request!");
         System.out.println("New connection request!");
 
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
@@ -147,9 +161,12 @@ public class SSLEngineServer extends SSLEngineComms {
             socketChannel.register(selector, SelectionKey.OP_READ, engine);
         } else {
             socketChannel.close();
-            //log.debug("Connection closed due to handshake failure.");
             System.out.println("Connection closed due to handshake failure.");
         }
+    }
+
+    public void write(SocketChannel socketChannel, SSLEngine engine, byte[] message) throws IOException {
+        super.write(socketChannel, engine, message);
     }
 
     /**
@@ -161,4 +178,7 @@ public class SSLEngineServer extends SSLEngineComms {
         return active;
     }
 
+    public InetSocketAddress getSocketAddress() {
+        return (InetSocketAddress) this.socketAddress;
+    }
 }

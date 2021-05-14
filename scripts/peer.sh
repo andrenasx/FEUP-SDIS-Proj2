@@ -1,8 +1,8 @@
 argc=$#
 
-if (( argc != 3 ))
+if (( argc < 3 || argc > 4 ))
 then
-	echo "Usage: $0 <svc_access_point> <host_addr> <port>"
+	echo "Usage: $0 <svc_access_point> <host_addr> <port> [-b]"
 	exit 1
 fi
 
@@ -14,4 +14,4 @@ port=$3
 
 # Execute the program
 
-java sslengine.SSLPeer ${sap} ${host} ${port}
+java peer.Peer ${sap} ${host} ${port} $4

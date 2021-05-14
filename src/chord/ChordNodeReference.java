@@ -3,11 +3,11 @@ package chord;
 import java.net.InetSocketAddress;
 
 public class ChordNodeReference {
-    private int id;
+    private int guid;
     private InetSocketAddress address;
 
-    public ChordNodeReference(InetSocketAddress address, int id) {
-        this.id = id;
+    public ChordNodeReference(InetSocketAddress address, int guid) {
+        this.guid = guid;
         this.address = address;
     }
 
@@ -15,11 +15,19 @@ public class ChordNodeReference {
         return address;
     }
 
-    public int getId() {
-        return id;
+    public int getGuid() {
+        return guid;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setGuid(int guid) {
+        this.guid = guid;
+    }
+
+    @Override
+    public String toString() {
+        return "ChordNodeReference{" +
+                "guid=" + guid +
+                ", address=" + address +
+                '}';
     }
 }

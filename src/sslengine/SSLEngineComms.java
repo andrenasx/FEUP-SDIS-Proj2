@@ -28,15 +28,12 @@ import java.util.concurrent.Executors;
  * which is common for both client and server and provides the abstract {@link SSLEngineComms#read(SocketChannel, SSLEngine)} and
  * {@link SSLEngineComms#write(SocketChannel, SSLEngine, String)} methods, that need to be implemented by the specific SSL/TLS peer
  * that is going to extend this class.
- *
- * @author <a href="mailto:alex.a.karnezis@gmail.com">Alex Karnezis</a>
  */
 public abstract class SSLEngineComms {
 
     /**
      * Class' logger.
      */
-    //protected final Logger log = Logger.getLogger(getClass());
 
     /**
      * Will contain this peer's application data in plaintext, that will be later encrypted
@@ -75,8 +72,7 @@ public abstract class SSLEngineComms {
      */
     protected ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public String read(SocketChannel socketChannel, SSLEngine engine) throws IOException {
-        //log.debug("About to read from a client...");
+    protected byte[] read(SocketChannel socketChannel, SSLEngine engine) throws IOException {
         //System.out.println("About to read data...");
 
         peerNetData.clear();
@@ -84,7 +80,7 @@ public abstract class SSLEngineComms {
         if (bytesRead > 0) {
             peerNetData.flip();
 
-            String message = null;
+            byte[] message = null;
 
             while (peerNetData.hasRemaining()) {
                 peerAppData.clear();
@@ -103,10 +99,9 @@ public abstract class SSLEngineComms {
                             peerAppData.duplicate().get(buffer);
                         }
 
-                        //log.debug("Incoming message: " + new String(peerAppData.array()));
-                        System.out.println("Incoming message: " + new String(buffer));
+                        //System.out.println("Incoming message: " + new String(buffer));
 
-                        message = new String(buffer);
+                        message = buffer;
                         break;
                     case BUFFER_OVERFLOW:
                         peerAppData = enlargeApplicationBuffer(engine, peerAppData);
@@ -115,10 +110,8 @@ public abstract class SSLEngineComms {
                         peerNetData = handleBufferUnderflow(engine, peerNetData);
                         break;
                     case CLOSED:
-                        //log.debug("Client wants to close connection...");
                         System.out.println("Other wants to close connection...");
                         closeConnection(socketChannel, engine);
-                        //log.debug("Goodbye client!");
                         System.out.println("Goodbye other!");
                         return null;
                     default:
@@ -130,22 +123,19 @@ public abstract class SSLEngineComms {
 
         }
         else if (bytesRead < 0) {
-            //log.error("Received end of stream. Will try to close connection with client...");
             System.out.println("Received end of stream. Will try to close connection with client...");
             handleEndOfStream(socketChannel, engine);
-            //log.debug("Goodbye client!");
             System.out.println("Goodbye client!");
         }
 
         return null;
     }
 
-    public void write(SocketChannel socketChannel, SSLEngine engine, String message) throws IOException {
-        //log.debug("About to write to a client...");
+    protected void write(SocketChannel socketChannel, SSLEngine engine, byte[] message) throws IOException {
         //System.out.println("About to write data...");
 
         myAppData.clear();
-        myAppData.put(message.getBytes());
+        myAppData.put(message);
         myAppData.flip();
         while (myAppData.hasRemaining()) {
             // The loop has a meaning for (outgoing) messages larger than 16KB.
@@ -158,8 +148,7 @@ public abstract class SSLEngineComms {
                     while (myNetData.hasRemaining()) {
                         socketChannel.write(myNetData);
                     }
-                    //log.debug("Message sent to the client: " + message);
-                    System.out.println("Message sent: " + message);
+                    //System.out.println("Message sent: " + message);
                     break;
                 case BUFFER_OVERFLOW:
                     myNetData = enlargePacketBuffer(engine, myNetData);
@@ -191,8 +180,6 @@ public abstract class SSLEngineComms {
      * @throws IOException - if an error occurs during read/write to the socket channel.
      */
     protected boolean doHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
-
-        //log.debug("About to do handshake...");
         System.out.println("About to do handshake...");
 
         SSLEngineResult result;
@@ -219,7 +206,6 @@ public abstract class SSLEngineComms {
                         try {
                             engine.closeInbound();
                         } catch (SSLException e) {
-                            //log.error("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
                             System.err.println("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
                         }
                         engine.closeOutbound();
@@ -233,7 +219,6 @@ public abstract class SSLEngineComms {
                         peerNetData.compact();
                         handshakeStatus = result.getHandshakeStatus();
                     } catch (SSLException sslException) {
-                        //log.error("A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
                         System.err.println("A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
                         engine.closeOutbound();
                         handshakeStatus = engine.getHandshakeStatus();
@@ -269,7 +254,6 @@ public abstract class SSLEngineComms {
                         result = engine.wrap(myAppData, myNetData);
                         handshakeStatus = result.getHandshakeStatus();
                     } catch (SSLException sslException) {
-                        //log.error("A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
                         System.err.println("A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
                         engine.closeOutbound();
                         handshakeStatus = engine.getHandshakeStatus();
@@ -299,7 +283,6 @@ public abstract class SSLEngineComms {
                                 // At this point the handshake status will probably be NEED_UNWRAP so we make sure that peerNetData is clear to read.
                                 peerNetData.clear();
                             } catch (Exception e) {
-                                //log.error("Failed to send server's CLOSE message due to socket channel's failure.");
                                 System.err.println("Failed to send server's CLOSE message due to socket channel's failure.");
                                 handshakeStatus = engine.getHandshakeStatus();
                             }
@@ -409,7 +392,6 @@ public abstract class SSLEngineComms {
         try {
             engine.closeInbound();
         } catch (Exception e) {
-            //log.error("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
             System.err.println("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
         }
         closeConnection(socketChannel, engine);

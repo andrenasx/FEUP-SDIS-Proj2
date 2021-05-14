@@ -1,39 +1,47 @@
 package chord;
 
-import channel.Server;
-import messages.chord.ChordMessage;
-import messages.chord.JoinMessage;
-import messages.chord.LookupMessage;
+import messages.ChordMessage;
+import messages.GuidMessage;
+import messages.JoinMessage;
+import sslengine.SSLEngineClient;
+import sslengine.SSLEngineServer;
 import utils.Utils;
 
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLContext;
 import java.net.InetSocketAddress;
 
 import static utils.Utils.generateId;
 
-public class ChordNode extends Server{
-    protected boolean boot;
-    protected ChordNodeReference self;
-    protected ChordNodeReference bootPeer;
-    protected ChordNodeReference predecessor;
-    protected ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
+public class ChordNode extends SSLEngineServer {
+    private SSLContext context;
 
-    public ChordNode(InetSocketAddress address, boolean boot){
-        super(address,boot);
+    private boolean boot;
+    private ChordNodeReference self;
+    private ChordNodeReference bootPeer;
+    private ChordNodeReference predecessor;
+    private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
+
+    public ChordNode(InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, SSLContext context, boolean boot) throws Exception {
+        super(context, socketAddress);
         this.boot = boot;
-        this.bootPeer = new ChordNodeReference(address, -1);
-        this.self = new ChordNodeReference(this.address,-1);
 
-        // Create Peer Internal State
-        //this.storage = PeerStorage.loadState(this);
-    }
+        this.context = context;
 
-    public int getNodeId(){
-        return  self.getId();
-    }
+        this.self = new ChordNodeReference(this.getSocketAddress(), -1);
+        this.bootPeer = new ChordNodeReference(bootSocketAddress, -1);
 
-    public void setNodeId(int id){
-        self.setId(id);
+        new Thread(() -> {
+            try {
+                this.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        System.out.println("My Address " + this.getSocketAddress());
+        System.out.println("Boot Address " + bootPeer.getSocketAddress());
+
+        this.joinRing();
     }
 
     public ChordNodeReference successor() {
@@ -48,35 +56,39 @@ public class ChordNode extends Server{
         this.routingTable[position - 1] = reference;
     }
 
-    public void joinRing(){
-        InetSocketAddress socketAddress = bootPeer.getSocketAddress();
+    public void joinRing() {
+        InetSocketAddress bootSocketAddress = bootPeer.getSocketAddress();
 
         if(this.boot){
-            self.setId(generateId(socketAddress));
+            this.self.setGuid(generateId(bootSocketAddress));
 
             //boot peer will be its successor
-            this.setChordNodeReference(1,new ChordNodeReference(socketAddress, self.getId()));
-            System.out.println("Peer started as boot with id: " + self.getId());
+            this.setChordNodeReference(1, new ChordNodeReference(bootSocketAddress, this.self.getGuid()));
+            System.out.println("Peer started as boot with id: " + this.self.getGuid());
             return;
         }
 
-        try{
-            SSLSocket socket = connect(socketAddress);
-            ChordMessage message = new JoinMessage(self);
+        try {
+            System.out.println("Joining " + this.bootPeer.getSocketAddress());
+            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress);
+            client.connect();
 
-            //Send join
-            this.send_message(message, socket);
+            JoinMessage request = new JoinMessage(this.self);
+            client.write(request.encode());
+            System.out.println("Client sent: " + request);
 
-            //Receive response and handle task
-            this.receive_message(socket).submitTask((Peer) this);
+            ChordMessage response = ChordMessage.create(client.read());
+            System.out.println("Client received: " + response);
+            response.getTask(this, null, null).run();
 
-        }catch(Exception e){
+            client.shutdown();
+        } catch(Exception e) {
             System.out.println("Could not connect to peer");
             e.printStackTrace();
         }
     }
 
-    public ChordNodeReference findSuccessor(int id){
+    /*public ChordNodeReference findSuccessor(int id){
         System.out.println("finding successor");
 
         if (successor() == null)
@@ -110,13 +122,21 @@ public class ChordNode extends Server{
             if(between(routingTable[i].getId(), self.getId(), id, false))
                 return routingTable[i];
         }
-        return new ChordNodeReference(this.address, self.getId());
-    }
+        return new ChordNodeReference(this.self.getSocketAddress(), self.getId());
+    }*/
 
-    public boolean between(int id, int currentId, int successorId, boolean includeSuccessor){
+    public boolean between(int id, int currentId, int successorId, boolean includeSuccessor) {
         if(includeSuccessor)
             return id > currentId && id <= successorId;
         else
             return id > currentId && id < successorId;
+    }
+
+    public ChordNodeReference getSelfReference () {
+        return this.self;
+    }
+
+    public ChordNodeReference getBootReference () {
+        return this.bootPeer;
     }
 }
