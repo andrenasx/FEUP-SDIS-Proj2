@@ -47,6 +47,7 @@ public class Peer extends ChordNode implements PeerInit {
             peer = new Peer(serviceAccessPoint, socketAddress, bootSocketAddress, boot);
         } catch (Exception e) {
             System.err.println("Error creating Peer");
+            e.printStackTrace();
             return;
         }
 
