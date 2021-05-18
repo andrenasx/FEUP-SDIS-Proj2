@@ -96,6 +96,6 @@ public class Peer extends ChordNode implements PeerInit {
 
     @Override
     public String state() throws RemoteException {
-        return null;
+        return this.chordState();
     }
 }

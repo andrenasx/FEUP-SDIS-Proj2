@@ -19,12 +19,11 @@ public class NotifyTask extends ChordTask {
 
     @Override
     public void run() {
-        int peerGuid = this.node.getSelfReference().getGuid();
-        int predecessorGuid = this.node.predecessor().getGuid();
-        int senderGuid = this.message.getSenderGuid();
+        System.out.println("[NOTIFY_TASK] Predecessor: " + this.node.predecessor());
 
-        if(this.node.predecessor() == null || this.node.between(peerGuid,predecessorGuid,senderGuid,false)){
+        if(this.node.predecessor() == null || this.node.between(this.node.getSelfReference().getGuid(), this.node.predecessor().getGuid(), this.message.getSenderGuid(),false)){
             this.node.setPredecessor(this.message.getSenderNodeReference());
+            System.out.println(" INSIDE TASK IF");
         }
     }
 }
