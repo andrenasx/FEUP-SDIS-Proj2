@@ -82,7 +82,7 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws IOException if an I/O error occurs to the socket channel.
      */
     public void write(byte[] message) throws IOException {
-        System.out.println("Client about to write data");
+        //System.out.println("Client about to write data");
         write(socketChannel, engine, message);
     }
 
@@ -92,7 +92,7 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws Exception
      */
     public byte[] read() throws Exception {
-        System.out.println("Client about to read data");
+        //System.out.println("Client about to read data");
 
         byte[] message = null;
         while (message == null) {
@@ -107,10 +107,10 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws IOException if an I/O error occurs to the socket channel.
      */
     public void shutdown() throws IOException {
-        System.out.println("About to close connection with the server...");
+        //System.out.println("About to close connection with the server...");
         closeConnection(socketChannel, engine);
         executor.shutdown();
-        System.out.println("Goodbye from Client!");
+        //System.out.println("Goodbye from Client!");
     }
 
 }

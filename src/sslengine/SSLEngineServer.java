@@ -119,14 +119,14 @@ public class SSLEngineServer extends SSLEngineComms {
                             System.out.println("Error reading message... SENDING ERROR!!!!!");
                             ErrorMessage response = new ErrorMessage(((ChordNode)this).getSelfReference());
                             this.write(channel, engine, response.encode());
-                            System.out.println("Server sent: " + response);
+                            //System.out.println("Server sent: " + response);
                         }
 
                         // data is null if error or end of connection
                         if (data != null) {
                             try {
                                 ChordMessage request = ChordMessage.create(data);
-                                System.out.println("Server received: " + request);
+                                //System.out.println("Server received: " + request);
                                 this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
                             } catch (Exception e) {
                                 System.out.println("Couldn't parse request message");
@@ -140,9 +140,9 @@ public class SSLEngineServer extends SSLEngineComms {
             e.printStackTrace();
         }
 
-        System.out.println("Goodbye from Server!");
+        //System.out.println("Goodbye from Server!");
     }
-    
+
     /**
      * Sets the server to an inactive state, in order to exit the reading loop in {@link SSLEngineServer#start()}
      * and also wakes up the selector, which may be in select() blocking state.
@@ -163,7 +163,7 @@ public class SSLEngineServer extends SSLEngineComms {
      * @throws Exception
      */
     private void accept(SelectionKey key) throws Exception {
-        System.out.println("New connection request!");
+        //System.out.println("New connection request!");
 
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         socketChannel.configureBlocking(false);

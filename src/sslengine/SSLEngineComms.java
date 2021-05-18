@@ -110,9 +110,9 @@ public abstract class SSLEngineComms {
                         peerNetData = handleBufferUnderflow(engine, peerNetData);
                         break;
                     case CLOSED:
-                        System.out.println("Other wants to close connection...");
+                        //System.out.println("Other wants to close connection...");
                         closeConnection(socketChannel, engine);
-                        System.out.println("Goodbye other!");
+                        //System.out.println("Goodbye other!");
                         return null;
                     default:
                         throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
@@ -123,9 +123,9 @@ public abstract class SSLEngineComms {
 
         }
         else if (bytesRead < 0) {
-            System.out.println("Received end of stream. Will try to close connection with client...");
+            //System.out.println("Received end of stream. Will try to close connection with client...");
             handleEndOfStream(socketChannel, engine);
-            System.out.println("Goodbye client!");
+            //System.out.println("Goodbye client!");
         }
 
         return null;
@@ -180,7 +180,7 @@ public abstract class SSLEngineComms {
      * @throws IOException - if an error occurs during read/write to the socket channel.
      */
     protected boolean doHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
-        System.out.println("About to do handshake...");
+        //System.out.println("About to do handshake...");
 
         SSLEngineResult result;
         HandshakeStatus handshakeStatus;
