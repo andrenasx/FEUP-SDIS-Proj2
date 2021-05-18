@@ -2,13 +2,11 @@ package tasks;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import messages.JoinMessage;
 import messages.LookupMessage;
 import messages.LookupReplyMessage;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
@@ -19,18 +17,12 @@ public class LookupTask extends ChordTask {
 
     @Override
     public void run() {
-
         //sets guid
         int requestedId = ((LookupMessage) this.message).getRequestedGuid();
         System.out.println("LookupTask searching for successor of " + requestedId);
 
         //send find successor after receiving guid
-        ChordNodeReference reference = this.node.getSelfReference();
-
-        if (reference.getGuid() != requestedId) {
-            reference = node.findSuccessor(requestedId);
-        }else
-            System.out.println("ITS ME YOU'RE LOOKING FOR :D");
+        ChordNodeReference reference = node.findSuccessor(requestedId);
 
         LookupReplyMessage response = new LookupReplyMessage(node.getSelfReference(), reference.toString().getBytes(StandardCharsets.UTF_8));
 

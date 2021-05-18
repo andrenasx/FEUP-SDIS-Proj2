@@ -1,6 +1,7 @@
 package tasks;
 
 import chord.ChordNode;
+import chord.ChordNodeReference;
 import messages.GuidMessage;
 import messages.JoinMessage;
 import utils.Utils;
@@ -22,7 +23,20 @@ public class JoinTask extends ChordTask {
 
         int guidToSend = Utils.generateId(socketAddress);
 
-        GuidMessage response = new GuidMessage(node.getSelfReference(), String.valueOf(guidToSend).getBytes(StandardCharsets.UTF_8));
+        //finds successor of new id
+        ChordNodeReference successor = this.node.findSuccessor(guidToSend);
+
+        while(successor.getGuid() == guidToSend){
+            System.out.println("oops... " + guidToSend + " already exists");
+            guidToSend = (guidToSend + 1) % (2^Utils.CHORD_M);
+            successor = this.node.findSuccessor(guidToSend);
+        }
+
+        //updates boot peer successor
+        if(this.node.between(guidToSend,this.node.getSelfReference().getGuid(),this.node.successor().getGuid(), false))
+            this.node.setChordNodeReference(1,new ChordNodeReference(socketAddress,guidToSend));
+
+        GuidMessage response = new GuidMessage(node.getSelfReference(), (guidToSend + " " + successor).getBytes(StandardCharsets.UTF_8));
 
         try {
             node.write(channel, engine, response.encode());

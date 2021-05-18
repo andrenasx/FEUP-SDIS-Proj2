@@ -2,6 +2,7 @@ package sslengine;
 
 import chord.ChordNode;
 import messages.ChordMessage;
+import messages.ErrorMessage;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -89,42 +90,56 @@ public class SSLEngineServer extends SSLEngineComms {
      *
      * @throws Exception
      */
-    public void start() throws Exception {
+    public void start() {
         System.out.println("Initialized and waiting for new connections...");
 
-        while (isActive()) {
-            selector.select();
-            Iterator<SelectionKey> selectedKeys = selector.selectedKeys().iterator();
-            while (selectedKeys.hasNext()) {
-                SelectionKey key = selectedKeys.next();
-                selectedKeys.remove();
-                if (!key.isValid()) {
-                    continue;
-                }
-                if (key.isAcceptable()) {
-                    accept(key);
-                } else if (key.isReadable()) {
-                    SocketChannel channel = (SocketChannel) key.channel();
-                    SSLEngine engine = (SSLEngine) key.attachment();
-                    //System.out.println("Server about to read data");
+        try {
+            while (isActive()) {
+                selector.select();
+                Iterator<SelectionKey> selectedKeys = selector.selectedKeys().iterator();
+                while (selectedKeys.hasNext()) {
+                    SelectionKey key = selectedKeys.next();
+                    selectedKeys.remove();
+                    if (!key.isValid()) {
+                        continue;
+                    }
+                    if (key.isAcceptable()) {
+                        accept(key);
+                    } else if (key.isReadable()) {
+                        SocketChannel channel = (SocketChannel) key.channel();
+                        SSLEngine engine = (SSLEngine) key.attachment();
+                        //System.out.println("Server about to read data");
 
-                    // read data and create ChordMessage
-                    byte[] data = read(channel, engine);
-
-                    // data is null if error or end of connection
-                    if (data != null) {
+                        byte[] data = null;
                         try {
-                            ChordMessage request = ChordMessage.create(data);
-                            System.out.println("Server received: " + request);
-                            this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
-                        } catch (Exception e) {
-                            System.out.println("Couldn't parse request message");
+                            // read data and create ChordMessage
+                            data = read(channel, engine);
+
+                        }catch (Exception e){
+                            System.out.println("Error reading message... SENDING ERROR!!!!!");
+                            ErrorMessage response = new ErrorMessage(((ChordNode)this).getSelfReference());
+                            this.write(channel, engine, response.encode());
+                            System.out.println("Server sent: " + response);
+                        }
+
+                        // data is null if error or end of connection
+                        if (data != null) {
+                            try {
+                                ChordMessage request = ChordMessage.create(data);
+                                System.out.println("Server received: " + request);
+                                this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
+                            } catch (Exception e) {
+                                System.out.println("Couldn't parse request message");
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
             }
+        }catch(Exception e){
+            e.printStackTrace();
         }
-        
+
         System.out.println("Goodbye from Server!");
     }
     

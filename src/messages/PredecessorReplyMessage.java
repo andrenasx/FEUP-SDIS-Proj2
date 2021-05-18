@@ -2,24 +2,20 @@ package messages;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import tasks.GuidTask;
+import tasks.ChordTask;
 
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
-//GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <NEWGUID>
-public class GuidMessage extends ChordMessage {
-    private final int guid;
-    private final ChordNodeReference successor;
+//GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <CLOSEST PRED. GUID> <CLOSEST PRED. IP> <CLOSEST PRED. PORT>
+public class PredecessorReplyMessage extends ChordMessage {
+    private ChordNodeReference predecessor = null;
 
-    public GuidMessage(ChordNodeReference senderReference, byte[] body) {
-        super("GUID", senderReference, body);
-
-        String[] bodyParts = new String(body).split(" ", 2);
-
-        this.guid = Integer.parseInt(bodyParts[0]);
-        this.successor = new ChordNodeReference(bodyParts[1].getBytes(StandardCharsets.UTF_8));
+    public PredecessorReplyMessage(ChordNodeReference senderReference, byte[] body) {
+        super("PREDECESSORREPLY", senderReference, body);
+        if (body.length != 0)
+            this.predecessor = new ChordNodeReference(body);
     }
 
     @Override
@@ -30,6 +26,8 @@ public class GuidMessage extends ChordMessage {
                 this.getSenderGuid(),
                 this.getSenderHostAddress(),
                 this.getSenderPort()).getBytes(StandardCharsets.UTF_8);
+
+        if (body.length == 0) { return header; }
 
         // Create Message array
         byte[] message = new byte[header.length + this.body.length];
@@ -42,24 +40,19 @@ public class GuidMessage extends ChordMessage {
     }
 
     @Override
-    public GuidTask getTask(ChordNode node, SocketChannel channel, SSLEngine engine) {
-        return new GuidTask(this, node);
+    public ChordTask getTask(ChordNode node, SocketChannel channel, SSLEngine engine) {
+        return null;
     }
 
     @Override
     public String toString() {
-        return "GuidMessage {" +
+        return "PredecessorReplyMessage {" +
                 "sender=" + this.getSenderNodeReference() +
-                ", newGuid=" + this.guid +
-                ", successor=" + this.successor +
+                ", predecessor=" + this.predecessor +
                 '}';
     }
 
-    public int getNewGuid() {
-        return this.guid;
-    }
-
-    public ChordNodeReference getSuccessorReference() {
-        return this.successor;
+    public ChordNodeReference getPredecessor() {
+        return this.predecessor;
     }
 }

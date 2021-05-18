@@ -45,6 +45,7 @@ public class Peer extends ChordNode implements PeerInit {
             }
 
             peer = new Peer(serviceAccessPoint, socketAddress, bootSocketAddress, boot);
+            new Thread(peer::start).start();
         } catch (Exception e) {
             System.err.println("Error creating Peer");
             e.printStackTrace();
@@ -59,6 +60,17 @@ public class Peer extends ChordNode implements PeerInit {
         } catch (RemoteException e) {
             System.err.println("Error starting RMI");
         }
+    }
+
+    public void start(){
+        //joins chord ring
+        this.join();
+
+        //starts periodic stabilization
+        this.startPeriodicStabilize();
+
+        //starts server
+        super.start();
     }
 
 

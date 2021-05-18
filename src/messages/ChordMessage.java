@@ -2,7 +2,6 @@ package messages;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import peer.Peer;
 import tasks.ChordTask;
 
 import javax.net.ssl.SSLEngine;
@@ -50,6 +49,20 @@ public abstract class ChordMessage {
                 return new JoinMessage(senderReference);
             case "GUID":
                 return new GuidMessage(senderReference, body);
+            case "LOOKUP":
+                return new LookupMessage(senderReference, body);
+            case "LOOKUPREPLY":
+                return new LookupReplyMessage(senderReference, body);
+            case "PREDECESSOR":
+                return new PredecessorMessage(senderReference, body);
+            case "PREDECESSORREPLY":
+                return new PredecessorReplyMessage(senderReference, body);
+            case "NOTIFY":
+                return new NotifyMessage(senderReference);
+            case "ALIVE":
+                return new AliveMessage(senderReference);
+            case "ERROR":
+                return new ErrorMessage(senderReference);
             default:
                 throw new Exception("Unknown message type");
         }

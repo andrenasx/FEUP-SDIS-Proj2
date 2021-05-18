@@ -6,10 +6,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public abstract class Utils {
-    public static final int CHORD_M = 20;
+    public static final int CHORD_M = 8;
 
     public static int generateId(InetSocketAddress socketAddress){
-        String toHash = socketAddress.getAddress().getHostAddress() + "-" + socketAddress.getPort();
+        String toHash = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
         MessageDigest messageDigest;
         try {
             messageDigest = MessageDigest.getInstance("SHA-1");
