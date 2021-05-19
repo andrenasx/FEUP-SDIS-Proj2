@@ -33,7 +33,7 @@ public class AliveMessage extends ChordMessage {
 
     @Override
     public String toString() {
-        return "ErrorMessage {" +
+        return "AliveMessage {" +
                 "sender=" + this.getSenderNodeReference() +
                 '}';
     }

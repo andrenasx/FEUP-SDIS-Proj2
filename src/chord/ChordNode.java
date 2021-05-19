@@ -39,24 +39,24 @@ public class ChordNode extends SSLEngineServer {
     }
 
     protected void startPeriodicStabilize(){
-        scheduler.scheduleAtFixedRate(this::stabilize,10, 6, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::fixFingers,10, 10, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 14, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::stabilize,10, 10, TimeUnit.SECONDS);
+        //scheduler.scheduleAtFixedRate(this::fixFingers,10, 10, TimeUnit.SECONDS);
+        //scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 14, TimeUnit.SECONDS);
     }
 
-    public ChordNodeReference predecessor() { return predecessor; }
+    public synchronized ChordNodeReference predecessor() { return predecessor; }
 
-    public void setPredecessor(ChordNodeReference predecessor) { this.predecessor = predecessor; }
+    public synchronized void setPredecessor(ChordNodeReference predecessor) { this.predecessor = predecessor; }
 
-    public ChordNodeReference successor() {
+    public synchronized ChordNodeReference successor() {
         return routingTable[0];
     }
 
-    public ChordNodeReference getRoutingTable(int position){
+    public synchronized ChordNodeReference getRoutingTable(int position){
         return routingTable[position - 1];
     }
 
-    public void setChordNodeReference(int position, ChordNodeReference reference) {
+    public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
         this.routingTable[position] = reference;
     }
 
@@ -151,6 +151,8 @@ public class ChordNode extends SSLEngineServer {
             ChordMessage response = ChordMessage.create(client.read());
             System.out.println("Client received: " + response);
 
+            client.shutdown();
+
             if(response instanceof ErrorMessage) { return; } //server could not handle our request, aborts stabilize
 
             ChordNodeReference x = ((PredecessorReplyMessage) response).getPredecessor();
@@ -162,7 +164,6 @@ public class ChordNode extends SSLEngineServer {
 
             notify(successor());
 
-            client.shutdown();
         }catch(Exception e){
             System.out.println("Could not connect to Peer");
             e.printStackTrace();

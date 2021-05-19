@@ -21,7 +21,7 @@ public class NotifyTask extends ChordTask {
     public void run() {
         System.out.println("[NOTIFY_TASK] Predecessor: " + this.node.predecessor());
 
-        if(this.node.predecessor() == null || this.node.between(this.node.getSelfReference().getGuid(), this.node.predecessor().getGuid(), this.message.getSenderGuid(),false)){
+        if(this.node.predecessor() == null || this.node.between(this.message.getSenderGuid(), this.node.predecessor().getGuid(), this.node.getSelfReference().getGuid(),false)){
             this.node.setPredecessor(this.message.getSenderNodeReference());
             System.out.println(" INSIDE TASK IF");
         }
