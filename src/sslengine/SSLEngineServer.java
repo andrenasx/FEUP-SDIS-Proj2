@@ -63,14 +63,6 @@ public class SSLEngineServer extends SSLEngineComms {
     public SSLEngineServer(SSLContext context, InetSocketAddress socketAddress) throws Exception {
         this.context = context;
 
-        SSLSession dummySession = context.createSSLEngine().getSession();
-
-        myAppData = ByteBuffer.allocate(dummySession.getApplicationBufferSize());
-        myNetData = ByteBuffer.allocate(dummySession.getPacketBufferSize());
-        peerAppData = ByteBuffer.allocate(dummySession.getApplicationBufferSize());
-        peerNetData = ByteBuffer.allocate(dummySession.getPacketBufferSize());
-        dummySession.invalidate();
-
         selector = SelectorProvider.provider().openSelector();
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
@@ -170,6 +162,9 @@ public class SSLEngineServer extends SSLEngineComms {
 
         SSLEngine engine = context.createSSLEngine();
         engine.setUseClientMode(false);
+
+        setByteBuffers(engine.getSession());
+
         engine.beginHandshake();
 
         if (doHandshake(socketChannel, engine)) {

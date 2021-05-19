@@ -9,12 +9,11 @@ import java.nio.channels.SocketChannel;
 
 public class AliveTask extends ChordTask {
     public AliveTask(AliveMessage message, ChordNode node, SocketChannel channel, SSLEngine engine) {
-        super(message, node, null, null);
+        super(message, node, channel, engine);
     }
 
     @Override
     public void run() {
-
         AliveMessage response = new AliveMessage(this.node.getSelfReference());
 
         try {

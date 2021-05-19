@@ -8,7 +8,7 @@ import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
-//GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <NEWGUID>
+//GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <NEWGUID> <SUCCESSOR>
 public class GuidMessage extends ChordMessage {
     private final int guid;
     private final ChordNodeReference successor;

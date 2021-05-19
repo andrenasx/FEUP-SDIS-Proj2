@@ -2,10 +2,8 @@ package sslengine;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -36,6 +34,8 @@ public class SSLEngineClient extends SSLEngineComms {
      */
     private SocketChannel socketChannel;
 
+    private boolean blocking;
+
 
     /**
      * Initiates the engine to run as a client using peer information, and allocates space for the
@@ -44,17 +44,14 @@ public class SSLEngineClient extends SSLEngineComms {
      * @param socketAddress The socket address of the server.
      * @throws Exception
      */
-    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress) throws Exception  {
+    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress, boolean blocking) throws Exception  {
     	this.socketAddress = socketAddress;
+    	this.blocking = blocking;
 
-        engine = context.createSSLEngine(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
-        engine.setUseClientMode(true);
+        this.engine = context.createSSLEngine(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
+        this.engine.setUseClientMode(true);
 
-        SSLSession session = engine.getSession();
-        myAppData = ByteBuffer.allocate(session.getApplicationBufferSize());
-        myNetData = ByteBuffer.allocate(session.getPacketBufferSize());
-        peerAppData = ByteBuffer.allocate(session.getApplicationBufferSize());
-        peerNetData = ByteBuffer.allocate(session.getPacketBufferSize());
+        setByteBuffers(engine.getSession());
     }
 
     /**
@@ -72,7 +69,9 @@ public class SSLEngineClient extends SSLEngineComms {
     	}
 
     	engine.beginHandshake();
-    	return doHandshake(socketChannel, engine);
+    	boolean handshaked = doHandshake(socketChannel, engine);
+    	socketChannel.configureBlocking(blocking);
+    	return handshaked;
     }
 
     /**
@@ -94,11 +93,7 @@ public class SSLEngineClient extends SSLEngineComms {
     public byte[] read() throws Exception {
         //System.out.println("Client about to read data");
 
-        byte[] message = null;
-        while (message == null) {
-            message = read(socketChannel, engine);
-        }
-        return message;
+        return read(socketChannel, engine);
     }
 
     /**

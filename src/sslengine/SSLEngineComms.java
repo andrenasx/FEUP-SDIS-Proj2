@@ -14,63 +14,20 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-//import org.apache.log4j.Logger;
-
-/**
- * A class that represents an SSL/TLS peer, and can be extended to create a client or a server.
- * <p/>
- * It makes use of the JSSE framework, and specifically the {@link SSLEngine} logic, which
- * is described by Oracle as "an advanced API, not appropriate for casual use", since
- * it requires the user to implement much of the communication establishment procedure himself.
- * More information about it can be found here: http://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SSLEngine
- * <p/>
- * {@link SSLEngineComms} implements the handshake protocol, required to establish a connection between two peers,
- * which is common for both client and server and provides the abstract {@link SSLEngineComms#read(SocketChannel, SSLEngine)} and
- * {@link SSLEngineComms#write(SocketChannel, SSLEngine, String)} methods, that need to be implemented by the specific SSL/TLS peer
- * that is going to extend this class.
- */
 public abstract class SSLEngineComms {
-
-    /**
-     * Class' logger.
-     */
-
-    /**
-     * Will contain this peer's application data in plaintext, that will be later encrypted
-     * using {@link SSLEngine#wrap(ByteBuffer, ByteBuffer)} and sent to the other peer. This buffer can typically
-     * be of any size, as long as it is large enough to contain this peer's outgoing messages.
-     * If this peer tries to send a message bigger than buffer's capacity a {@link BufferOverflowException}
-     * will be thrown.
-     */
     protected ByteBuffer myAppData;
-
-    /**
-     * Will contain this peer's encrypted data, that will be generated after {@link SSLEngine#wrap(ByteBuffer, ByteBuffer)}
-     * is applied on {@link SSLEngineComms#myAppData}. It should be initialized using {@link SSLSession#getPacketBufferSize()},
-     * which returns the size up to which, SSL/TLS packets will be generated from the engine under a session.
-     * All SSLEngine network buffers should be sized at least this large to avoid insufficient space problems when performing wrap and unwrap calls.
-     */
     protected ByteBuffer myNetData;
-
-    /**
-     * Will contain the other peer's (decrypted) application data. It must be large enough to hold the application data
-     * from any peer. Can be initialized with {@link SSLSession#getApplicationBufferSize()} for an estimation
-     * of the other peer's application data and should be enlarged if this size is not enough.
-     */
     protected ByteBuffer peerAppData;
-
-    /**
-     * Will contain the other peer's encrypted data. The SSL/TLS protocols specify that implementations should produce packets containing at most 16 KB of plaintext,
-     * so a buffer sized to this value should normally cause no capacity problems. However, some implementations violate the specification and generate large records up to 32 KB.
-     * If the {@link SSLEngine#unwrap(ByteBuffer, ByteBuffer)} detects large inbound packets, the buffer sizes returned by SSLSession will be updated dynamically, so the this peer
-     * should check for overflow conditions and enlarge the buffer using the session's (updated) buffer size.
-     */
     protected ByteBuffer peerNetData;
-
-    /**
-     * Will be used to execute tasks that may emerge during handshake in parallel with the server's main thread.
-     */
     protected ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    protected void setByteBuffers(SSLSession session) {
+        myAppData = ByteBuffer.allocate(session.getApplicationBufferSize());
+        myNetData = ByteBuffer.allocate(session.getPacketBufferSize());
+        peerAppData = ByteBuffer.allocate(session.getApplicationBufferSize());
+        peerNetData = ByteBuffer.allocate(session.getPacketBufferSize());
+    }
+
 
     protected byte[] read(SocketChannel socketChannel, SSLEngine engine) throws IOException {
         //System.out.println("About to read data...");
@@ -85,6 +42,7 @@ public abstract class SSLEngineComms {
             while (peerNetData.hasRemaining()) {
                 peerAppData.clear();
                 SSLEngineResult result = engine.unwrap(peerNetData, peerAppData);
+
                 switch (result.getStatus()) {
                     case OK:
                         peerAppData.flip();
@@ -120,9 +78,12 @@ public abstract class SSLEngineComms {
             }
 
             return message;
-
         }
         else if (bytesRead < 0) {
+            if (engine.isInboundDone() && engine.isOutboundDone()) {
+                return null;
+            }
+
             //System.out.println("Received end of stream. Will try to close connection with client...");
             handleEndOfStream(socketChannel, engine);
             //System.out.println("Goodbye client!");
@@ -135,8 +96,10 @@ public abstract class SSLEngineComms {
         //System.out.println("About to write data...");
 
         myAppData.clear();
+        myAppData = ByteBuffer.allocate(message.length);
         myAppData.put(message);
         myAppData.flip();
+
         while (myAppData.hasRemaining()) {
             // The loop has a meaning for (outgoing) messages larger than 16KB.
             // Every wrap call will remove 16KB from the original message and send it to the remote peer.
@@ -185,10 +148,6 @@ public abstract class SSLEngineComms {
         SSLEngineResult result;
         HandshakeStatus handshakeStatus;
 
-        // NioSslPeer's fields myAppData and peerAppData are supposed to be large enough to hold all message data the peer
-        // will send and expects to receive from the other peer respectively. Since the messages to be exchanged will usually be less
-        // than 16KB long the capacity of these fields should also be smaller. Here we initialize these two local buffers
-        // to be used for the handshake, while keeping client's buffers at the same size.
         int appBufferSize = engine.getSession().getApplicationBufferSize();
         ByteBuffer myAppData = ByteBuffer.allocate(appBufferSize);
         ByteBuffer peerAppData = ByteBuffer.allocate(appBufferSize);

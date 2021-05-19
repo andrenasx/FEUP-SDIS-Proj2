@@ -22,7 +22,7 @@ public class ChordNode extends SSLEngineServer {
     private ChordNodeReference bootPeer;
     private ChordNodeReference predecessor;
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
-    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(2);
+    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
     private int next = 0; // it will be incremented to 1 at fixfingers
 
     public ChordNode(InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, SSLContext context, boolean boot) throws Exception {
@@ -74,7 +74,7 @@ public class ChordNode extends SSLEngineServer {
 
         try {
             System.out.println("Joining " + this.bootPeer.getSocketAddress());
-            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress);
+            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress, true);
             client.connect();
 
             JoinMessage request = new JoinMessage(this.self);
@@ -110,7 +110,7 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("Closest to " + guid + ": " + closest);
 
         try{
-            SSLEngineClient client = new SSLEngineClient(this.context, closest.getSocketAddress());
+            SSLEngineClient client = new SSLEngineClient(this.context, closest.getSocketAddress(), true);
             client.connect();
 
             ChordMessage request = new LookupMessage(self, String.valueOf(guid).getBytes(StandardCharsets.UTF_8));
@@ -138,7 +138,7 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("\n\nstabilizing...");
 
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, successor().getSocketAddress());
+            SSLEngineClient client = new SSLEngineClient(this.context, successor().getSocketAddress(), true);
             client.connect();
 
             PredecessorMessage request = new PredecessorMessage(self, null);
@@ -172,9 +172,8 @@ public class ChordNode extends SSLEngineServer {
     }
 
     public void notify(ChordNodeReference successor){
-        System.out.println(" RUNNING NOTIFY FUNCTION");
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, successor.getSocketAddress());
+            SSLEngineClient client = new SSLEngineClient(this.context, successor.getSocketAddress(), true);
             client.connect();
 
             NotifyMessage request = new NotifyMessage(self);
@@ -203,7 +202,7 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("\n\nchecking predecessor...");
         try {
             if(predecessor == null) { return; }
-            SSLEngineClient client = new SSLEngineClient(this.context, predecessor.getSocketAddress());
+            SSLEngineClient client = new SSLEngineClient(this.context, predecessor.getSocketAddress(), true);
             client.connect();
 
             AliveMessage request = new AliveMessage(self);
