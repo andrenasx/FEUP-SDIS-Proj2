@@ -1,6 +1,7 @@
 package chord;
 
 import messages.*;
+import sslengine.MessageTimeoutException;
 import sslengine.SSLEngineClient;
 import sslengine.SSLEngineServer;
 import utils.Utils;
@@ -40,7 +41,7 @@ public class ChordNode extends SSLEngineServer {
 
     protected void startPeriodicStabilize(){
         scheduler.scheduleAtFixedRate(this::stabilize,10, 10, TimeUnit.SECONDS);
-        //scheduler.scheduleAtFixedRate(this::fixFingers,10, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::fixFingers,10, 10, TimeUnit.SECONDS);
         //scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 14, TimeUnit.SECONDS);
     }
 
@@ -74,15 +75,27 @@ public class ChordNode extends SSLEngineServer {
 
         try {
             System.out.println("Joining " + this.bootPeer.getSocketAddress());
-            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress, true);
+            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress, false);
             client.connect();
 
             JoinMessage request = new JoinMessage(this.self);
             client.write(request.encode());
             System.out.println("Client sent: " + request);
 
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
+            this.setChordNodeReference(0,bootPeer);
+
+            //receive response
+            ChordMessage response = null;
+            try {
+                response = ChordMessage.create(client.receive(50));
+                System.out.println("Client received: " + response);
+            } catch (MessageTimeoutException e) {
+                System.out.println("Could not join ring. Aborting");
+                // try to close connection
+                client.shutdown();
+                return;
+            }
+
             response.getTask(this, null, null).run();
 
             client.shutdown();
@@ -110,7 +123,7 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("Closest to " + guid + ": " + closest);
 
         try{
-            SSLEngineClient client = new SSLEngineClient(this.context, closest.getSocketAddress(), true);
+            SSLEngineClient client = new SSLEngineClient(this.context, closest.getSocketAddress(), false);
             client.connect();
 
             ChordMessage request = new LookupMessage(self, String.valueOf(guid).getBytes(StandardCharsets.UTF_8));
@@ -120,8 +133,16 @@ public class ChordNode extends SSLEngineServer {
             System.out.println("Client sent: " + request);
 
             //receive response
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
+            ChordMessage response = null;
+            try {
+                response = ChordMessage.create(client.receive(50));
+                System.out.println("Client received: " + response);
+            } catch (MessageTimeoutException e) {
+                System.out.println("Could not receive message, aborting");
+                // try to close connection
+                client.shutdown();
+                return null;
+            }
 
             client.shutdown();
 
@@ -138,7 +159,7 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("\n\nstabilizing...");
 
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, successor().getSocketAddress(), true);
+            SSLEngineClient client = new SSLEngineClient(this.context, successor().getSocketAddress(), false);
             client.connect();
 
             PredecessorMessage request = new PredecessorMessage(self, null);
@@ -148,12 +169,18 @@ public class ChordNode extends SSLEngineServer {
             System.out.println("Client sent: " + request);
 
             //receive predecessor response
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
+            ChordMessage response = null;
+            try {
+                response = ChordMessage.create(client.receive(50));
+                System.out.println("Client received: " + response);
+            } catch (MessageTimeoutException e) {
+                System.out.println("Could not receive message, aborting");
+                // try to close connection
+                client.shutdown();
+                return;
+            }
 
             client.shutdown();
-
-            if(response instanceof ErrorMessage) { return; } //server could not handle our request, aborts stabilize
 
             ChordNodeReference x = ((PredecessorReplyMessage) response).getPredecessor();
 

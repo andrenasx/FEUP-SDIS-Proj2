@@ -13,3 +13,15 @@ start cmd /k sh ../scripts/peer.sh peer2 localhost 8001
 timeout 5
 
 start cmd /k sh ../scripts/peer.sh peer3 localhost 8001
+
+timeout 5
+
+start cmd /k sh ../scripts/peer.sh peer4 localhost 8001
+
+timeout 5
+
+start cmd /k sh ../scripts/peer.sh peer5 localhost 8001
+
+timeout 5
+
+start cmd /k sh ../scripts/peer.sh peer6 localhost 8001

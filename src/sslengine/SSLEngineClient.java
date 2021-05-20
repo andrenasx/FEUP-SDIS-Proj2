@@ -108,4 +108,22 @@ public class SSLEngineClient extends SSLEngineComms {
         //System.out.println("Goodbye from Client!");
     }
 
+    public byte[] receive(int timeToRead) throws MessageTimeoutException, IOException {
+        byte[] reply;
+        int attempt = 0;
+        while ((reply = this.read(socketChannel, engine)) == null && attempt < 50) {
+            attempt++;
+            try {
+                Thread.sleep(timeToRead * 3L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if (reply == null) {
+            throw new MessageTimeoutException("Message took too long to receive!");
+        }
+
+        return reply;
+    }
+
 }
