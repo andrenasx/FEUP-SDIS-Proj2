@@ -41,7 +41,7 @@ public class Peer extends ChordNode implements PeerInit {
                 socketAddress = bootSocketAddress;
             }
             else {
-                socketAddress = new InetSocketAddress(InetAddress.getLocalHost(), 0);
+                socketAddress = new InetSocketAddress("127.0.0.1", 0);
             }
 
             peer = new Peer(serviceAccessPoint, socketAddress, bootSocketAddress, boot);

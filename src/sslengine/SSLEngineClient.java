@@ -44,7 +44,7 @@ public class SSLEngineClient extends SSLEngineComms {
      * @param socketAddress The socket address of the server.
      * @throws Exception
      */
-    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress, boolean blocking) throws Exception  {
+    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress) throws Exception  {
     	this.socketAddress = socketAddress;
     	this.blocking = blocking;
 
@@ -70,7 +70,6 @@ public class SSLEngineClient extends SSLEngineComms {
 
     	engine.beginHandshake();
     	boolean handshaked = doHandshake(socketChannel, engine);
-    	socketChannel.configureBlocking(blocking);
     	return handshaked;
     }
 
@@ -93,7 +92,15 @@ public class SSLEngineClient extends SSLEngineComms {
     public byte[] read() throws Exception {
         //System.out.println("Client about to read data");
 
-        return read(socketChannel, engine);
+        int attempt = 0;
+        byte[] message = read(socketChannel, engine);
+        while(message == null && attempt < 50) {
+            message = read(socketChannel, engine);
+            attempt++;
+            Thread.sleep(100);
+        }
+
+        return message;
     }
 
     /**

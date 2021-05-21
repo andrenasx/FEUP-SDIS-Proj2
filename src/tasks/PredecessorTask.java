@@ -2,8 +2,6 @@ package tasks;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import messages.LookupMessage;
-import messages.LookupReplyMessage;
 import messages.PredecessorMessage;
 import messages.PredecessorReplyMessage;
 
@@ -20,9 +18,9 @@ public class PredecessorTask extends ChordTask {
     @Override
     public void run() {
         //sends response with my predecessor
-        ChordNodeReference predecessor = this.node.predecessor();
+        ChordNodeReference predecessor = this.node.getPredecessor();
 
-        String predecessorStr = predecessor != null ? this.node.predecessor().toString() : "";
+        String predecessorStr = predecessor != null ? this.node.getPredecessor().toString() : "";
 
         PredecessorReplyMessage response = new PredecessorReplyMessage(node.getSelfReference(), predecessorStr.getBytes(StandardCharsets.UTF_8));
 

@@ -61,9 +61,6 @@ public abstract class ChordMessage {
                 return new NotifyMessage(senderReference);
             case "ALIVE":
                 return new AliveMessage(senderReference);
-            case "ERROR":
-                System.err.println("[!!! CLIENT !!!] Created ERROR message from" + guid);
-                return new ErrorMessage(senderReference);
             default:
                 throw new Exception("Unknown message type");
         }

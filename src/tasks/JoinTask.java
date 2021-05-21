@@ -33,8 +33,8 @@ public class JoinTask extends ChordTask {
         }
 
         //updates boot peer successor
-        if(this.node.between(guidToSend, this.node.getSelfReference().getGuid(), this.node.successor().getGuid(), false))
-            this.node.setChordNodeReference(0, new ChordNodeReference(socketAddress,guidToSend));
+        if(this.node.between(guidToSend, this.node.getSelfReference().getGuid(), this.node.getSuccessor().getGuid(), false))
+            this.node.setSuccessor(new ChordNodeReference(socketAddress,guidToSend));
 
         GuidMessage response = new GuidMessage(node.getSelfReference(), (guidToSend + " " + successor).getBytes(StandardCharsets.UTF_8));
 

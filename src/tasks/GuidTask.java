@@ -21,7 +21,7 @@ public class GuidTask extends ChordTask {
         System.out.println("Peer with id " + this.node.getSelfReference().getGuid());
 
         //updates successor
-        this.node.setChordNodeReference(0, new ChordNodeReference(message.getBody()));
+        this.node.setSuccessor(new ChordNodeReference(message.getBody()));
 
     }
 }

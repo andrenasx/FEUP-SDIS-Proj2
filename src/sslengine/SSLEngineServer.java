@@ -2,15 +2,12 @@ package sslengine;
 
 import chord.ChordNode;
 import messages.ChordMessage;
-import messages.ErrorMessage;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -108,10 +105,7 @@ public class SSLEngineServer extends SSLEngineComms {
                             data = read(channel, engine);
 
                         }catch (Exception e){
-                            System.out.println("Error reading message... SENDING ERROR!!!!!");
-                            ErrorMessage response = new ErrorMessage(((ChordNode)this).getSelfReference());
-                            this.write(channel, engine, response.encode());
-                            //System.out.println("Server sent: " + response);
+                            System.out.println("Error reading message...");
                         }
 
                         // data is null if error or end of connection
