@@ -2,7 +2,7 @@ package messages;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import tasks.GuidTask;
+import tasks.ChordTask;
 
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
@@ -42,8 +42,8 @@ public class GuidMessage extends ChordMessage {
     }
 
     @Override
-    public GuidTask getTask(ChordNode node, SocketChannel channel, SSLEngine engine) {
-        return new GuidTask(this, node);
+    public ChordTask getTask(ChordNode node, SocketChannel channel, SSLEngine engine) {
+        return null;
     }
 
     @Override

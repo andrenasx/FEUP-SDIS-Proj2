@@ -54,13 +54,11 @@ public abstract class ChordMessage {
             case "LOOKUPREPLY":
                 return new LookupReplyMessage(senderReference, body);
             case "PREDECESSOR":
-                return new PredecessorMessage(senderReference, body);
+                return new PredecessorMessage(senderReference);
             case "PREDECESSORREPLY":
                 return new PredecessorReplyMessage(senderReference, body);
             case "NOTIFY":
                 return new NotifyMessage(senderReference);
-            case "ALIVE":
-                return new AliveMessage(senderReference);
             default:
                 throw new Exception("Unknown message type");
         }

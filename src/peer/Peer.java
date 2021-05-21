@@ -15,7 +15,7 @@ public class Peer extends ChordNode implements PeerInit {
     private final String serviceAccessPoint;
 
     public Peer(String serviceAccessPoint, InetSocketAddress socketAddress, InetSocketAddress bootScoketAddress, boolean boot) throws Exception {
-        super(socketAddress, bootScoketAddress, SSLEngineComms.createContext(), boot);
+        super(socketAddress, bootScoketAddress, boot);
         this.serviceAccessPoint = serviceAccessPoint;
     }
 

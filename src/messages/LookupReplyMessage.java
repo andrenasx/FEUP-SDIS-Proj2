@@ -3,8 +3,6 @@ package messages;
 import chord.ChordNode;
 import chord.ChordNodeReference;
 import tasks.ChordTask;
-import tasks.GuidTask;
-import tasks.LookupTask;
 
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;

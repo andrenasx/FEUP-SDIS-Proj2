@@ -5,6 +5,7 @@ import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.Random;
 
 /**
  * An SSL/TLS client that connects to a server using its IP address and port.
@@ -34,19 +35,20 @@ public class SSLEngineClient extends SSLEngineComms {
      */
     private SocketChannel socketChannel;
 
-    private boolean blocking;
-
 
     /**
      * Initiates the engine to run as a client using peer information, and allocates space for the
      * buffers that will be used by the engine.
      *
      * @param socketAddress The socket address of the server.
-     * @throws Exception
      */
-    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress) throws Exception  {
+    public SSLEngineClient(SSLContext context, InetSocketAddress socketAddress) {
+        try {
+            Thread.sleep(new Random().nextInt(500));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     	this.socketAddress = socketAddress;
-    	this.blocking = blocking;
 
         this.engine = context.createSSLEngine(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
         this.engine.setUseClientMode(true);
@@ -114,5 +116,4 @@ public class SSLEngineClient extends SSLEngineComms {
         executor.shutdown();
         //System.out.println("Goodbye from Client!");
     }
-
 }

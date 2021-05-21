@@ -2,7 +2,6 @@ package messages;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import tasks.GuidTask;
 import tasks.LookupTask;
 
 import javax.net.ssl.SSLEngine;
@@ -16,6 +15,11 @@ public class LookupMessage extends ChordMessage {
     public LookupMessage(ChordNodeReference senderReference, byte[] body) {
         super("LOOKUP", senderReference, body);
         this.guid = Integer.parseInt(new String(body));
+    }
+
+    public LookupMessage(ChordNodeReference senderReference, int guid) {
+        super("LOOKUP", senderReference, String.valueOf(guid).getBytes(StandardCharsets.UTF_8));
+        this.guid = guid;
     }
 
     @Override

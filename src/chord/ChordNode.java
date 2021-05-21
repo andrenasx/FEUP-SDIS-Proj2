@@ -2,7 +2,8 @@ package chord;
 
 import messages.*;
 import sslengine.SSLEngineClient;
-import sslengine.SSLEngineServer;
+import sslengine.SSLEngineComms;
+import sslengine.SSLEnginePeer;
 import utils.Utils;
 
 import javax.net.ssl.SSLContext;
@@ -14,22 +15,18 @@ import java.util.concurrent.TimeUnit;
 
 import static utils.Utils.generateId;
 
-public class ChordNode extends SSLEngineServer {
-    private SSLContext context;
-
+public class ChordNode extends SSLEnginePeer {
     private boolean boot;
     private ChordNodeReference self;
     private ChordNodeReference bootPeer;
     private ChordNodeReference predecessor;
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
-    private int next = 1; // it will be incremented to 1 at fixfingers
+    private int next = 1;
 
-    public ChordNode(InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, SSLContext context, boolean boot) throws Exception {
-        super(context, socketAddress);
+    public ChordNode(InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, boolean boot) throws Exception {
+        super(SSLEngineComms.createContext(), socketAddress);
         this.boot = boot;
-
-        this.context = context;
 
         this.self = new ChordNodeReference(this.getSocketAddress(), -1);
         this.bootPeer = new ChordNodeReference(bootSocketAddress, -1);
@@ -85,23 +82,16 @@ public class ChordNode extends SSLEngineServer {
         }
 
         try {
-            System.out.println("Joining " + this.bootPeer.getSocketAddress());
-            SSLEngineClient client = new SSLEngineClient(this.context, bootSocketAddress);
-            client.connect();
-
             JoinMessage request = new JoinMessage(this.self);
-            client.write(request.encode());
-            System.out.println("Client sent: " + request);
 
-            GuidMessage response = (GuidMessage) ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
-            response.getTask(this, null, null).run();
+            GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode()));
 
-            client.shutdown();
+            this.self.setGuid(response.getNewGuid());
+            System.out.println("Peer with id " + response.getNewGuid());
 
             this.setSuccessor(response.getSuccessorReference());
         } catch (Exception e) {
-            System.out.println("Could not connect to peer");
+            System.out.println("Could not exchange messages");
             e.printStackTrace();
         }
     }
@@ -124,27 +114,15 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("Closest to " + guid + ": " + closest);
 
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, closest.getSocketAddress());
-            client.connect();
+            LookupMessage request = new LookupMessage(self, guid);
 
-            ChordMessage request = new LookupMessage(self, String.valueOf(guid).getBytes(StandardCharsets.UTF_8));
+            LookupReplyMessage response = (LookupReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(closest.getSocketAddress(), request.encode()));
 
-            //Send lookup
-            client.write(request.encode());
-            System.out.println("Client sent: " + request);
-
-            //receive response
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
-
-            client.shutdown();
-
-            return ((LookupReplyMessage) response).getSuccessor();
-
+            return response.getSuccessor();
         } catch (Exception e) {
-            System.out.println("Could not connect to peer");
+            System.out.println("Could not exchange messages");
             e.printStackTrace();
-            return null;
+            return self;
         }
     }
 
@@ -152,23 +130,11 @@ public class ChordNode extends SSLEngineServer {
         System.out.println("\n\nstabilizing...");
 
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, getSuccessor().getSocketAddress());
-            client.connect();
+            PredecessorMessage request = new PredecessorMessage(self);
 
-            PredecessorMessage request = new PredecessorMessage(self, null);
+            PredecessorReplyMessage response = (PredecessorReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request.encode()));
 
-            //Send predecessor request
-            client.write(request.encode());
-            System.out.println("Client sent: " + request);
-
-            //receive predecessor response
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
-
-            client.shutdown();
-
-            ChordNodeReference predecessor = ((PredecessorReplyMessage) response).getPredecessor();
-
+            ChordNodeReference predecessor = response.getPredecessor();
             if (predecessor != null && between(predecessor.getGuid(), self.getGuid(), getSuccessor().getGuid(), false)) {
                 //set node successor
                 this.setSuccessor(predecessor);
@@ -178,26 +144,18 @@ public class ChordNode extends SSLEngineServer {
                 notify(getSuccessor());
 
         } catch (Exception e) {
-            System.out.println("Could not connect to Peer");
+            System.out.println("Could not exchange messages");
             e.printStackTrace();
         }
-
     }
 
     public void notify(ChordNodeReference successor) {
         try {
-            SSLEngineClient client = new SSLEngineClient(this.context, successor.getSocketAddress());
-            client.connect();
-
             NotifyMessage request = new NotifyMessage(self);
 
-            //Send notify
-            client.write(request.encode());
-            System.out.println("Client sent: " + request);
-
-            client.shutdown();
+            this.sendMessage(successor.getSocketAddress(), request.encode());
         } catch (Exception e) {
-            System.out.println("Could not connect to Peer");
+            System.out.println("Could not send notify to Peer");
             e.printStackTrace();
         }
     }
@@ -217,28 +175,13 @@ public class ChordNode extends SSLEngineServer {
     }
 
     public void checkPredecessor() {
-        System.out.println("\n\nchecking predecessor...");
-        try {
-            if (predecessor == null) {
-                return;
+        if (this.predecessor != null) {
+            System.out.println("\n\nchecking predecessor...");
+
+            if (!this.connectToPeer(this.predecessor.getSocketAddress())) {
+                System.err.println("Couldn't connect to predecessor");
+                this.predecessor = null;
             }
-            SSLEngineClient client = new SSLEngineClient(this.context, predecessor.getSocketAddress());
-            client.connect();
-
-            AliveMessage request = new AliveMessage(self);
-
-            //Send notify
-            client.write(request.encode());
-            System.out.println("Client sent: " + request);
-
-            //receive response
-            ChordMessage response = ChordMessage.create(client.read());
-            System.out.println("Client received: " + response);
-
-            client.shutdown();
-        } catch (Exception e) {
-            System.out.println("Could not connect to Peer");
-            e.printStackTrace();
         }
     }
 
@@ -264,10 +207,6 @@ public class ChordNode extends SSLEngineServer {
 
     public ChordNodeReference getBootReference() {
         return this.bootPeer;
-    }
-
-    public SSLContext getContext() {
-        return this.context;
     }
 
     public String chordState() {

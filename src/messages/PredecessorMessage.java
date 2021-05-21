@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 //GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <GUID>
 public class PredecessorMessage extends ChordMessage {
 
-    public PredecessorMessage(ChordNodeReference senderReference, byte[] body) {
+    public PredecessorMessage(ChordNodeReference senderReference) {
         super("PREDECESSOR", senderReference, null);
     }
 
