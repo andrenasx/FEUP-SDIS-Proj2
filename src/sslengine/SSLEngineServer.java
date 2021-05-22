@@ -82,7 +82,7 @@ public class SSLEngineServer extends SSLEngineComms {
         System.out.println("Initialized and waiting for new connections...");
 
         try {
-            while (isActive()) {
+            while (active) {
                 selector.select();
                 Iterator<SelectionKey> selectedKeys = selector.selectedKeys().iterator();
                 while (selectedKeys.hasNext()) {
@@ -174,13 +174,14 @@ public class SSLEngineServer extends SSLEngineComms {
         super.write(socketChannel, engine, message);
     }
 
-    /**
-     * Determines if the the server is active or not.
-     *
-     * @return if the server is active or not.
-     */
-    private boolean isActive() {
-        return active;
+    public void closeConnectionServer(SocketChannel socketChannel, SSLEngine engine) {
+        try {
+            super.closeConnection(socketChannel, engine);
+            System.out.println("!!!!! CLOSED AT PEER");
+        } catch (IOException e) {
+            System.err.println("Couldn't close connection in Server");
+            e.printStackTrace();
+        }
     }
 
     public InetSocketAddress getSocketAddress() {

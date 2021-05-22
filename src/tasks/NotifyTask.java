@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel;
 
 public class NotifyTask extends ChordTask {
     public NotifyTask(NotifyMessage message, ChordNode node, SocketChannel channel, SSLEngine engine) {
-        super(message, node, null, null);
+        super(message, node, channel, engine);
     }
 
     @Override
@@ -17,5 +17,7 @@ public class NotifyTask extends ChordTask {
             System.out.println("SETTING PREDECESSOR " + this.message.getSenderGuid() + " FOR NODE " + this.node.getSelfReference().getGuid());
             this.node.setPredecessor(this.message.getSenderNodeReference());
         }
+
+        this.node.closeConnectionServer(channel, engine);
     }
 }

@@ -40,7 +40,6 @@ public class SSLEnginePeer extends SSLEngineServer {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         client.connect();
         client.write(message);
-        Thread.sleep(1000);
-        client.shutdown();
+        // client.shutdown(); Shutdown is done at the Server
     }
 }
