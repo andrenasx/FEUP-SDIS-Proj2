@@ -31,14 +31,14 @@ public class ChordNode extends SSLEnginePeer {
         this.self = new ChordNodeReference(this.getSocketAddress(), -1);
         this.bootPeer = new ChordNodeReference(bootSocketAddress, -1);
 
-        System.out.println("My Address " + this.getSocketAddress());
-        System.out.println("Boot Address " + bootPeer.getSocketAddress());
+        System.out.println("[CHORD NODE] My Address " + this.getSocketAddress());
+        System.out.println("[CHORD NODE] Boot Address " + bootPeer.getSocketAddress());
     }
 
     protected void startPeriodicStabilize() {
-        scheduler.scheduleAtFixedRate(this::stabilize, 10, 10, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::fixFingers,10, 5, TimeUnit.SECONDS);
-        //scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 14, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::fixFingers,3, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 15, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -69,7 +69,7 @@ public class ChordNode extends SSLEnginePeer {
         return this.routingTable[position-1];
     }
 
-    public void join() {
+    public boolean join() {
         InetSocketAddress bootSocketAddress = bootPeer.getSocketAddress();
 
         if (this.boot) {
@@ -77,27 +77,31 @@ public class ChordNode extends SSLEnginePeer {
 
             //boot peer will be its successor
             this.setSuccessor(new ChordNodeReference(bootSocketAddress, this.self.getGuid()));
-            System.out.println("Peer started as boot with id: " + this.self.getGuid());
-            return;
+            System.out.println("[CHORD NODE] Boot with guid: " + this.self.getGuid());
+            return true;
         }
 
         try {
             JoinMessage request = new JoinMessage(this.self);
 
-            GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode()));
+            System.out.println("Client wrote: " + request);
+            GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
+            System.out.println("Client received: " + response);
 
             this.self.setGuid(response.getNewGuid());
-            System.out.println("Peer with id " + response.getNewGuid());
+            System.out.println("[CHORD NODE] Guid " + response.getNewGuid());
 
             this.setSuccessor(response.getSuccessorReference());
+            return true;
         } catch (Exception e) {
-            System.out.println("Could not exchange messages");
+            System.out.println("Could not join ring");
             e.printStackTrace();
+            return false;
         }
     }
 
     public ChordNodeReference findSuccessor(int guid) {
-        System.out.println("\n\nfinding successor...");
+        System.out.println("\n\n[CHORD-PERIODIC] finding successor...");
         System.out.println(getSuccessor());
 
         if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
@@ -105,18 +109,27 @@ public class ChordNode extends SSLEnginePeer {
             return self;
         }
 
-        if (between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
+        if (this.between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
             System.out.println("returned successor");
             return this.getSuccessor();
         }
 
-        ChordNodeReference closest = closestPrecedingNode(guid);
+        // Return node if we have an entry for it TODO
+        for (int i = Utils.CHORD_M ; i >= 1; i--) {
+            ChordNodeReference node = this.getChordNodeReference(i);
+            if (node != null && node.getGuid() == guid)
+                return node;
+        }
+
+        ChordNodeReference closest = this.closestPrecedingNode(guid);
         System.out.println("Closest to " + guid + ": " + closest);
 
         try {
             LookupMessage request = new LookupMessage(self, guid);
 
-            LookupReplyMessage response = (LookupReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(closest.getSocketAddress(), request.encode()));
+            System.out.println("Client wrote: " + request);
+            LookupReplyMessage response = (LookupReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(closest.getSocketAddress(), request.encode(), 200));
+            System.out.println("Client received: " + response);
 
             return response.getSuccessor();
         } catch (Exception e) {
@@ -127,16 +140,17 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     public void stabilize() {
-        System.out.println("\n\nstabilizing...");
+        System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
 
         try {
             PredecessorMessage request = new PredecessorMessage(self);
 
-            PredecessorReplyMessage response = (PredecessorReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request.encode()));
+            System.out.println("Client wrote: " + request);
+            PredecessorReplyMessage response = (PredecessorReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request.encode(), 100));
+            System.out.println("Client received: " + response);
 
             ChordNodeReference predecessor = response.getPredecessor();
-            if (predecessor != null && between(predecessor.getGuid(), self.getGuid(), getSuccessor().getGuid(), false)) {
-                //set node successor
+            if (predecessor != null && this.between(predecessor.getGuid(), self.getGuid(), getSuccessor().getGuid(), false)) {
                 this.setSuccessor(predecessor);
             }
 
@@ -153,6 +167,8 @@ public class ChordNode extends SSLEnginePeer {
         try {
             NotifyMessage request = new NotifyMessage(self);
 
+            System.out.println("NOTIFYING " + successor.getGuid());
+            System.out.println("Client wrote: " + request);
             this.sendMessage(successor.getSocketAddress(), request.encode());
         } catch (Exception e) {
             System.out.println("Could not send notify to Peer");
@@ -161,12 +177,12 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     public void fixFingers() {
-        System.out.println("\n\nfixing fingers...");
+        System.out.println("\n\n[CHORD-PERIODIC] fixing fingers...");
 
         int guid = this.self.getGuid() + (int) Math.pow(2, this.next - 1);
         guid = guid % Utils.CHORD_MAX_PEERS;
 
-        this.setChordNodeReference(this.next, findSuccessor(guid));
+        this.setChordNodeReference(this.next, this.findSuccessor(guid));
 
         this.next++;
         if (this.next > Utils.CHORD_M) {
@@ -176,7 +192,7 @@ public class ChordNode extends SSLEnginePeer {
 
     public void checkPredecessor() {
         if (this.predecessor != null) {
-            System.out.println("\n\nchecking predecessor...");
+            System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
 
             if (!this.connectToPeer(this.predecessor.getSocketAddress())) {
                 System.err.println("Couldn't connect to predecessor");
@@ -187,8 +203,8 @@ public class ChordNode extends SSLEnginePeer {
 
     public ChordNodeReference closestPrecedingNode(int id) {
         for (int i = Utils.CHORD_M ; i >= 1; i--) {
-            ChordNodeReference precedingNode = getChordNodeReference(i);
-            if (precedingNode != null && between(precedingNode.getGuid(), self.getGuid(), id, false))
+            ChordNodeReference precedingNode = this.getChordNodeReference(i);
+            if (precedingNode != null && this.between(precedingNode.getGuid(), self.getGuid(), id, false))
                 return precedingNode;
         }
         return self;
@@ -214,7 +230,7 @@ public class ChordNode extends SSLEnginePeer {
 
         stringBuilder.append("Node id: ").append(this.self.getGuid()).append("\n");
         stringBuilder.append("\nPredecessor: ").append(this.predecessor).append("\n");
-        stringBuilder.append("\nRouting table:\n").append("\n");
+        stringBuilder.append("\nRouting table:\n");
         for (int i = 0; i < routingTable.length; i++) {
             stringBuilder.append(i).append("-").append(routingTable[i]).append("\n");
         }

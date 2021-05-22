@@ -23,12 +23,12 @@ public class SSLEngineClient extends SSLEngineComms {
     /**
      * The socket of the server this client is configured to connect to.
      */
-	private InetSocketAddress socketAddress;
+	private final InetSocketAddress socketAddress;
 
 	/**
 	 * The engine that will be used to encrypt/decrypt data between this client and the server.
 	 */
-    private SSLEngine engine;
+    private final SSLEngine engine;
 
     /**
      * The socket channel that will be used as the transport link between this client and the server.
@@ -82,7 +82,6 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws IOException if an I/O error occurs to the socket channel.
      */
     public void write(byte[] message) throws IOException {
-        //System.out.println("Client about to write data");
         write(socketChannel, engine, message);
     }
 
@@ -91,7 +90,7 @@ public class SSLEngineClient extends SSLEngineComms {
      *
      * @throws Exception
      */
-    public byte[] read() throws Exception {
+    public byte[] read(int delay) throws Exception {
         //System.out.println("Client about to read data");
 
         int attempt = 0;
@@ -99,7 +98,7 @@ public class SSLEngineClient extends SSLEngineComms {
         while(message == null && attempt < 50) {
             message = read(socketChannel, engine);
             attempt++;
-            Thread.sleep(100);
+            Thread.sleep(delay);
         }
 
         return message;

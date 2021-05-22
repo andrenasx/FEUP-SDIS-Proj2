@@ -40,16 +40,16 @@ public class SSLEngineServer extends SSLEngineComms {
      * The context will be initialized with a specific SSL/TLS protocol and will then be used
      * to create {@link SSLEngine} classes for each new connection that arrives to the server.
      */
-    private SSLContext context;
+    private final SSLContext context;
 
     /**
      * A part of Java NIO that will be used to serve all connections to the server in one thread.
      */
-    private Selector selector;
+    private final Selector selector;
 
-    private SocketAddress socketAddress;
+    private final SocketAddress socketAddress;
 
-    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
+    private final ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
     /**
      * Server is designed to apply an SSL/TLS protocol and listen to an IP address and port.
@@ -67,7 +67,6 @@ public class SSLEngineServer extends SSLEngineComms {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         this.socketAddress = serverSocketChannel.socket().getLocalSocketAddress();
-        
         active = true;
     }
 
@@ -104,15 +103,16 @@ public class SSLEngineServer extends SSLEngineComms {
                             // read data and create ChordMessage
                             data = read(channel, engine);
 
-                        }catch (Exception e){
+                        } catch (Exception e){
                             System.out.println("Error reading message...");
+                            e.printStackTrace();
                         }
 
                         // data is null if error or end of connection
                         if (data != null) {
                             try {
                                 ChordMessage request = ChordMessage.create(data);
-                                //System.out.println("Server received: " + request);
+                                System.out.println("Server received: " + request);
                                 this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
                             } catch (Exception e) {
                                 System.out.println("Couldn't parse request message");
@@ -137,6 +137,7 @@ public class SSLEngineServer extends SSLEngineComms {
         System.out.println("Will now close server...");
     	active = false;
     	executor.shutdown();
+    	scheduler.shutdown();
     	selector.wakeup();
     }
 

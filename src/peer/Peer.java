@@ -1,10 +1,8 @@
 package peer;
 
 import chord.ChordNode;
-import sslengine.SSLEngineComms;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -45,9 +43,9 @@ public class Peer extends ChordNode implements PeerInit {
             }
 
             peer = new Peer(serviceAccessPoint, socketAddress, bootSocketAddress, boot);
-            new Thread(peer::start).start();
+            peer.initiate();
         } catch (Exception e) {
-            System.err.println("Error creating Peer");
+            System.err.println("[PEER] Error creating Peer");
             e.printStackTrace();
             return;
         }
@@ -58,19 +56,34 @@ public class Peer extends ChordNode implements PeerInit {
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(peer.serviceAccessPoint, stub);
         } catch (RemoteException e) {
-            System.err.println("Error starting RMI");
+            System.err.println("[PEER] Error starting RMI");
         }
+
+        /*PrintStream fileStream = new PrintStream(serviceAccessPoint + ".txt");
+        System.setOut(fileStream);
+        System.setErr(fileStream);*/
     }
 
-    public void start(){
+    public void initiate(){
         //joins chord ring
-        this.join();
+        if (!this.join()) {
+            System.err.println("[PEER] Error initializing");
+            return;
+        }
 
         //starts periodic stabilization
         this.startPeriodicStabilize();
 
         //starts server
-        super.start();
+        new Thread(super::start).start();
+
+        System.out.println("[PEER] Peer inited successfully");
+    }
+
+    public void shutdown() {
+        super.stop();
+
+        System.out.println("[PEER] Peer shutdown successfully");
     }
 
 

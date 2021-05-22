@@ -25,12 +25,12 @@ public class SSLEnginePeer extends SSLEngineServer {
         return connected;
     }
 
-    public byte[] sendAndReceiveMessage (InetSocketAddress socketAddress, byte[] message) throws Exception {
+    public byte[] sendAndReceiveMessage (InetSocketAddress socketAddress, byte[] message, int delay) throws Exception {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         client.connect();
         client.write(message);
 
-        byte[] response = client.read();
+        byte[] response = client.read(delay);
         client.shutdown();
 
         return response;
@@ -40,6 +40,7 @@ public class SSLEnginePeer extends SSLEngineServer {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         client.connect();
         client.write(message);
+        Thread.sleep(1000);
         client.shutdown();
     }
 }
