@@ -59,6 +59,8 @@ public abstract class ChordMessage {
                 return new PredecessorReplyMessage(senderReference, body);
             case "NOTIFY":
                 return new NotifyMessage(senderReference);
+            case "BACKUP":
+                return new BackupMessage(senderReference, body);
             default:
                 throw new Exception("Unknown message type");
         }

@@ -99,14 +99,15 @@ public class SSLEngineServer extends SSLEngineComms {
                         //System.out.println("Server about to read data");
 
                         byte[] data = null;
-                        try {
-                            // read data and create ChordMessage
-                            data = read(channel, engine);
-
-                        } catch (Exception e){
-                            System.out.println("Error reading message...");
-                            e.printStackTrace();
-                        }
+                        do {
+                            try {
+                                data = read(channel, engine);
+                            } catch (Exception e){
+                                System.out.println("Error reading message...");
+                                e.printStackTrace();
+                                data = null;
+                            }
+                        } while (data != null);
 
                         // data is null if error or end of connection
                         if (data != null) {

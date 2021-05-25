@@ -1,9 +1,12 @@
 package peer;
 
 import chord.ChordNode;
+import messages.BackupMessage;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -88,8 +91,21 @@ public class Peer extends ChordNode implements PeerInit {
 
 
     @Override
-    public void backup(String filepath, int replicationDegree) throws RemoteException {
-
+    public void backup(String filepath, int replicationDegree) {
+        byte[] body = null;
+        try {
+            body = Files.readAllBytes(Paths.get("../files/18kb"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Couldn't read all bytes from file");
+        }
+        BackupMessage bm = new BackupMessage(this.getSelfReference(), body);
+        try {
+            this.sendMessage(this.getBootReference().getSocketAddress(), bm.encode());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("coudlnt send message");
+        }
     }
 
     @Override

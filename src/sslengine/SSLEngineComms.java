@@ -5,7 +5,6 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
@@ -97,6 +96,7 @@ public abstract class SSLEngineComms {
 
         myAppData.clear();
         myAppData = ByteBuffer.allocate(message.length);
+        System.out.println("Allocated " + message.length);
         myAppData.put(message);
         myAppData.flip();
 
@@ -110,6 +110,7 @@ public abstract class SSLEngineComms {
                     myNetData.flip();
                     while (myNetData.hasRemaining()) {
                         socketChannel.write(myNetData);
+                        System.out.println("Wrote data");
                     }
                     //System.out.println("Message sent: " + message);
                     break;
