@@ -20,7 +20,8 @@ public class LookupReplyMessage extends ChordMessage {
     @Override
     public byte[] encode() {
         // Create Header in the specified format
-        byte[] header = String.format("%s %d %s %d \r\n\r\n",
+        byte[] header = String.format("%s %s %d %s %d \r\n\r\n",
+                "CHORD",
                 this.action,
                 this.getSenderGuid(),
                 this.getSenderHostAddress(),
