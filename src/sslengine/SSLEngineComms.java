@@ -96,7 +96,6 @@ public abstract class SSLEngineComms {
 
         myAppData.clear();
         myAppData = ByteBuffer.allocate(message.length);
-        System.out.println("Allocated " + message.length);
         myAppData.put(message);
         myAppData.flip();
 
@@ -110,9 +109,8 @@ public abstract class SSLEngineComms {
                     myNetData.flip();
                     while (myNetData.hasRemaining()) {
                         socketChannel.write(myNetData);
-                        System.out.println("Wrote data");
                     }
-                    //System.out.println("Message sent: " + message);
+                    //System.out.println("Message sent: " + new String(message));
                     break;
                 case BUFFER_OVERFLOW:
                     myNetData = enlargePacketBuffer(engine, myNetData);

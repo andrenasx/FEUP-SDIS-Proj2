@@ -2,7 +2,8 @@ package messages;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
-import tasks.BackupTask;
+import messages.chord.ChordMessage;
+import tasks.chord.BackupTask;
 
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
@@ -17,7 +18,7 @@ public class BackupMessage extends ChordMessage {
     public byte[] encode() {
         // Create Header in the specified format
         byte[] header = String.format("%s %d %s %d \r\n\r\n",
-                this.messageType,
+                this.action,
                 this.getSenderGuid(),
                 this.getSenderHostAddress(),
                 this.getSenderPort()).getBytes(StandardCharsets.UTF_8);

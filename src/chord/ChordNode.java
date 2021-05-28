@@ -1,6 +1,7 @@
 package chord;
 
-import messages.*;
+import messages.Message;
+import messages.chord.*;
 import sslengine.SSLEngineComms;
 import sslengine.SSLEnginePeer;
 import utils.Utils;
@@ -8,6 +9,7 @@ import utils.Utils;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static utils.Utils.generateId;
 
@@ -32,9 +34,9 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     protected void startPeriodicStabilize() {
-        /*scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::fixFingers,3, 5, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::checkPredecessor,10, 15, TimeUnit.SECONDS);*/
+        scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -58,11 +60,11 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
-        this.routingTable[position-1] = reference;
+        this.routingTable[position - 1] = reference;
     }
 
     public synchronized ChordNodeReference getChordNodeReference(int position) {
-        return this.routingTable[position-1];
+        return this.routingTable[position - 1];
     }
 
     public boolean join() {
@@ -81,7 +83,7 @@ public class ChordNode extends SSLEnginePeer {
             JoinMessage request = new JoinMessage(this.self);
 
             System.out.println("Client wrote: " + request);
-            GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
+            GuidMessage response = (GuidMessage) Message.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
             System.out.println("Client received: " + response);
 
             this.self.setGuid(response.getNewGuid());
@@ -111,7 +113,7 @@ public class ChordNode extends SSLEnginePeer {
         }
 
         // Return node if we have an entry for it TODO
-        for (int i = Utils.CHORD_M ; i >= 1; i--) {
+        for (int i = Utils.CHORD_M; i >= 1; i--) {
             ChordNodeReference node = this.getChordNodeReference(i);
             if (node != null && node.getGuid() == guid)
                 return node;
@@ -127,7 +129,7 @@ public class ChordNode extends SSLEnginePeer {
             LookupReplyMessage response = (LookupReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(closest.getSocketAddress(), request.encode(), 200));
             System.out.println("Client received: " + response);
 
-            return response.getSuccessor();
+            return response.getNode();
         } catch (Exception e) {
             System.out.println("Could not exchange messages");
             e.printStackTrace();
@@ -198,7 +200,7 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     public ChordNodeReference closestPrecedingNode(int id) {
-        for (int i = Utils.CHORD_M ; i >= 1; i--) {
+        for (int i = Utils.CHORD_M; i >= 1; i--) {
             ChordNodeReference precedingNode = this.getChordNodeReference(i);
             if (precedingNode != null && this.between(precedingNode.getGuid(), self.getGuid(), id, false))
                 return precedingNode;
@@ -232,5 +234,10 @@ public class ChordNode extends SSLEnginePeer {
         }
 
         return stringBuilder.toString();
+    }
+
+    public void shutdownNode() {
+        this.scheduler.shutdown();
+        System.out.println("[CHORD] Node shutdown successfully");
     }
 }

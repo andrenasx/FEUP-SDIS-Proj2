@@ -11,7 +11,7 @@ public class SSLEnginePeer extends SSLEngineServer {
         this.context = context;
     }
 
-    public boolean connectToPeer (InetSocketAddress socketAddress) {
+    public boolean connectToPeer(InetSocketAddress socketAddress) {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         boolean connected = false;
 
@@ -25,7 +25,7 @@ public class SSLEnginePeer extends SSLEngineServer {
         return connected;
     }
 
-    public byte[] sendAndReceiveMessage (InetSocketAddress socketAddress, byte[] message, int delay) throws Exception {
+    public byte[] sendAndReceiveMessage(InetSocketAddress socketAddress, byte[] message, int delay) throws Exception {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         client.connect();
         client.write(message);
@@ -36,7 +36,7 @@ public class SSLEnginePeer extends SSLEngineServer {
         return response;
     }
 
-    public void sendMessage (InetSocketAddress socketAddress, byte[] message) throws Exception {
+    public void sendMessage(InetSocketAddress socketAddress, byte[] message) throws Exception {
         SSLEngineClient client = new SSLEngineClient(this.context, socketAddress);
         client.connect();
         client.write(message);

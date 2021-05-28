@@ -14,7 +14,7 @@ import java.util.Random;
  * in order to establish connection with the server.
  * <p/>
  * When the connection between the client and the object is established, {@link SSLEngineClient} provides
- * a public write and read method, in order to communicate with its peer. 
+ * a public write and read method, in order to communicate with its peer.
  *
  * @author <a href="mailto:alex.a.karnezis@gmail.com">Alex Karnezis</a>
  */
@@ -23,11 +23,11 @@ public class SSLEngineClient extends SSLEngineComms {
     /**
      * The socket of the server this client is configured to connect to.
      */
-	private final InetSocketAddress socketAddress;
+    private final InetSocketAddress socketAddress;
 
-	/**
-	 * The engine that will be used to encrypt/decrypt data between this client and the server.
-	 */
+    /**
+     * The engine that will be used to encrypt/decrypt data between this client and the server.
+     */
     private final SSLEngine engine;
 
     /**
@@ -48,7 +48,7 @@ public class SSLEngineClient extends SSLEngineComms {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-    	this.socketAddress = socketAddress;
+        this.socketAddress = socketAddress;
 
         this.engine = context.createSSLEngine(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
         this.engine.setUseClientMode(true);
@@ -63,16 +63,16 @@ public class SSLEngineClient extends SSLEngineComms {
      * @throws Exception
      */
     public boolean connect() throws Exception {
-    	socketChannel = SocketChannel.open();
-    	socketChannel.configureBlocking(false);
-    	socketChannel.connect(this.socketAddress);
-    	while (!socketChannel.finishConnect()) {
-    		// can do something here...
-    	}
+        socketChannel = SocketChannel.open();
+        socketChannel.configureBlocking(false);
+        socketChannel.connect(this.socketAddress);
+        while (!socketChannel.finishConnect()) {
+            // can do something here...
+        }
 
-    	engine.beginHandshake();
-    	boolean handshaked = doHandshake(socketChannel, engine);
-    	return handshaked;
+        engine.beginHandshake();
+        boolean handshaked = doHandshake(socketChannel, engine);
+        return handshaked;
     }
 
     /**
@@ -95,7 +95,7 @@ public class SSLEngineClient extends SSLEngineComms {
 
         int attempt = 0;
         byte[] message = read(socketChannel, engine);
-        while(message == null && attempt < 50) {
+        while (message == null && attempt < 50) {
             message = read(socketChannel, engine);
             attempt++;
             Thread.sleep(delay);

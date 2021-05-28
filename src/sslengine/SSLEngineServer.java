@@ -1,7 +1,7 @@
 package sslengine;
 
 import chord.ChordNode;
-import messages.ChordMessage;
+import messages.Message;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -30,12 +30,12 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  * create new {@link SocketChannel}s and a {@link Selector} which serves all the connections in one thread.
  */
 public class SSLEngineServer extends SSLEngineComms {
-	
-	/**
-	 * Declares if the server is active to serve and create new connections.
-	 */
-	private boolean active;
-	
+
+    /**
+     * Declares if the server is active to serve and create new connections.
+     */
+    private boolean active;
+
     /**
      * The context will be initialized with a specific SSL/TLS protocol and will then be used
      * to create {@link SSLEngine} classes for each new connection that arrives to the server.
@@ -93,26 +93,26 @@ public class SSLEngineServer extends SSLEngineComms {
                     }
                     if (key.isAcceptable()) {
                         accept(key);
-                    } else if (key.isReadable()) {
+                    }
+                    else if (key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
                         SSLEngine engine = (SSLEngine) key.attachment();
                         //System.out.println("Server about to read data");
 
                         byte[] data = null;
-                        do {
-                            try {
-                                data = read(channel, engine);
-                            } catch (Exception e){
-                                System.out.println("Error reading message...");
-                                e.printStackTrace();
-                                data = null;
-                            }
-                        } while (data != null);
+                        try {
+                            // read data and create ChordMessage
+                            data = read(channel, engine);
+
+                        } catch (Exception e) {
+                            System.out.println("Error reading message...");
+                            e.printStackTrace();
+                        }
 
                         // data is null if error or end of connection
                         if (data != null) {
                             try {
-                                ChordMessage request = ChordMessage.create(data);
+                                Message request = Message.create(data);
                                 System.out.println("Server received: " + request);
                                 this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
                             } catch (Exception e) {
@@ -123,7 +123,7 @@ public class SSLEngineServer extends SSLEngineComms {
                     }
                 }
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -135,11 +135,11 @@ public class SSLEngineServer extends SSLEngineComms {
      * and also wakes up the selector, which may be in select() blocking state.
      */
     public void stop() {
-        System.out.println("Will now close server...");
-    	active = false;
-    	executor.shutdown();
-    	scheduler.shutdown();
-    	selector.wakeup();
+        active = false;
+        executor.shutdown();
+        scheduler.shutdown();
+        selector.wakeup();
+        System.out.println("[SSLServer] Server shutdown successfully");
     }
 
     /**
@@ -165,7 +165,8 @@ public class SSLEngineServer extends SSLEngineComms {
 
         if (doHandshake(socketChannel, engine)) {
             socketChannel.register(selector, SelectionKey.OP_READ, engine);
-        } else {
+        }
+        else {
             socketChannel.close();
             System.out.println("Connection closed due to handshake failure.");
         }
@@ -178,7 +179,6 @@ public class SSLEngineServer extends SSLEngineComms {
     public void closeConnectionServer(SocketChannel socketChannel, SSLEngine engine) {
         try {
             super.closeConnection(socketChannel, engine);
-            System.out.println("!!!!! CLOSED AT PEER");
         } catch (IOException e) {
             System.err.println("Couldn't close connection in Server");
             e.printStackTrace();

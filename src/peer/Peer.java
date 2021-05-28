@@ -22,7 +22,7 @@ public class Peer extends ChordNode implements PeerInit {
 
     public static void main(String[] args) throws IOException {
         if (args.length < 3) {
-                System.out.println("Usage: java Peer <serviceAccessPoint> <bootAddress> <bootPort> [-b]");
+            System.out.println("Usage: java Peer <serviceAccessPoint> <bootAddress> <bootPort> [-b]");
             return;
         }
 
@@ -67,10 +67,11 @@ public class Peer extends ChordNode implements PeerInit {
         System.setErr(fileStream);*/
     }
 
-    public void initiate(){
+    public void initiate() {
         //joins chord ring
         if (!this.join()) {
             System.err.println("[PEER] Error initializing");
+            this.shutdown();
             return;
         }
 
@@ -84,6 +85,7 @@ public class Peer extends ChordNode implements PeerInit {
     }
 
     public void shutdown() {
+        super.shutdownNode();
         super.stop();
 
         System.out.println("[PEER] Peer shutdown successfully");

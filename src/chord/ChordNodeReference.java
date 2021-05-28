@@ -9,7 +9,7 @@ public class ChordNodeReference {
     public ChordNodeReference(byte[] reference) {
         String chordReference = new String(reference);
 
-        this.guid = Integer.parseInt(chordReference.substring(chordReference.indexOf('=') + 1,chordReference.indexOf(',')));
+        this.guid = Integer.parseInt(chordReference.substring(chordReference.indexOf('=') + 1, chordReference.indexOf(',')));
         this.address = new InetSocketAddress(
                 chordReference.substring(chordReference.indexOf('/') + 1, chordReference.indexOf(':')),
                 Integer.parseInt(chordReference.substring(chordReference.indexOf(':') + 1, chordReference.indexOf('}'))));
