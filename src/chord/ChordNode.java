@@ -83,7 +83,7 @@ public class ChordNode extends SSLEnginePeer {
             JoinMessage request = new JoinMessage(this.self);
 
             System.out.println("Client wrote: " + request);
-            GuidMessage response = (GuidMessage) Message.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
+            GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
             System.out.println("Client received: " + response);
 
             this.self.setGuid(response.getNewGuid());
