@@ -20,7 +20,6 @@ public class JoinTask extends Task {
 
     @Override
     public void run() {
-        System.out.println("JOIN TASK");
         InetSocketAddress socketAddress = message.getSenderSocketAddress();
 
         int guidToSend = Utils.generateId(socketAddress);
@@ -38,7 +37,7 @@ public class JoinTask extends Task {
         if (this.node.between(guidToSend, this.node.getSelfReference().getGuid(), this.node.getSuccessor().getGuid(), false))
             this.node.setSuccessor(new ChordNodeReference(socketAddress, guidToSend));
 
-        GuidMessage response = new GuidMessage(node.getSelfReference(), (guidToSend + " ").getBytes(StandardCharsets.UTF_8));
+        GuidMessage response = new GuidMessage(node.getSelfReference(), (guidToSend + " " + successor).getBytes(StandardCharsets.UTF_8));
 
         try {
             node.write(channel, engine, response.encode());
