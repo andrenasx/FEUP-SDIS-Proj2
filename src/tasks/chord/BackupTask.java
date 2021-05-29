@@ -6,6 +6,7 @@ import messages.chord.GuidMessage;
 import messages.protocol.BackupMessage;
 import messages.protocol.OkMessage;
 import messages.protocol.ProtocolMessage;
+import peer.Peer;
 import tasks.Task;
 
 import javax.net.ssl.SSLEngine;
@@ -22,7 +23,7 @@ public class BackupTask extends Task {
 
     @Override
     public void run() {
-        System.out.println("BACKUP TASK");
+        System.out.println("BACKUP TASKLKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
         String fileId = ((BackupMessage) message).getFileId();
         long size = ((BackupMessage) message).getSize();
         String filename = ((BackupMessage) message).getFilename();
@@ -32,7 +33,7 @@ public class BackupTask extends Task {
         System.out.println("Testing capacity.. (to be implemented)");
 
         try {
-            FileOutputStream outputStream = new FileOutputStream("../files/restored_" + filename);
+            FileOutputStream outputStream = new FileOutputStream(((Peer)node).getPeerStorage().getStoragePath() + filename);
             FileChannel fileChannel = outputStream.getChannel();
             System.out.println("Ready to receive file...");
 

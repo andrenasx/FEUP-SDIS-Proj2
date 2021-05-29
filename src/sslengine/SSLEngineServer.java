@@ -113,7 +113,7 @@ public class SSLEngineServer extends SSLEngineComms {
                         if (data != null) {
                             try {
                                 Message request = Message.create(data);
-                                System.out.println("Server received: " + request);
+                                //System.out.println("Server received: " + request);
                                 if(request instanceof BackupMessage)
                                     key.cancel();
                                 this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));

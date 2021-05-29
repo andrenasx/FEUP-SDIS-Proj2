@@ -34,9 +34,9 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     protected void startPeriodicStabilize() {
-        /*scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);*/
+        this.scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -82,9 +82,9 @@ public class ChordNode extends SSLEnginePeer {
         try {
             JoinMessage request = new JoinMessage(this.self);
 
-            System.out.println("Client wrote: " + request);
+            //System.out.println("Client wrote: " + request);
             GuidMessage response = (GuidMessage) ChordMessage.create(this.sendAndReceiveMessage(bootSocketAddress, request.encode(), 100));
-            System.out.println("Client received: " + response);
+            //System.out.println("Client received: " + response);
 
             this.self.setGuid(response.getNewGuid());
             System.out.println("[CHORD NODE] Guid " + response.getNewGuid());
@@ -125,14 +125,14 @@ public class ChordNode extends SSLEnginePeer {
         try {
             LookupMessage request = new LookupMessage(self, guid);
 
-            System.out.println("Client wrote: " + request);
+            //System.out.println("Client wrote: " + request);
             LookupReplyMessage response = (LookupReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(closest.getSocketAddress(), request.encode(), 200));
-            System.out.println("Client received: " + response);
+            //System.out.println("Client received: " + response);
 
             return response.getNode();
         } catch (Exception e) {
             System.out.println("Could not exchange messages");
-            e.printStackTrace();
+            //e.printStackTrace();
             return self;
         }
     }
@@ -143,9 +143,9 @@ public class ChordNode extends SSLEnginePeer {
         try {
             PredecessorMessage request = new PredecessorMessage(self);
 
-            System.out.println("Client wrote: " + request);
+            //System.out.println("Client wrote: " + request);
             PredecessorReplyMessage response = (PredecessorReplyMessage) ChordMessage.create(this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request.encode(), 100));
-            System.out.println("Client received: " + response);
+            //System.out.println("Client received: " + response);
 
             ChordNodeReference predecessor = response.getPredecessor();
             if (predecessor != null && this.between(predecessor.getGuid(), self.getGuid(), getSuccessor().getGuid(), false)) {
@@ -157,7 +157,7 @@ public class ChordNode extends SSLEnginePeer {
 
         } catch (Exception e) {
             System.out.println("Could not exchange messages");
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -165,8 +165,8 @@ public class ChordNode extends SSLEnginePeer {
         try {
             NotifyMessage request = new NotifyMessage(self);
 
-            System.out.println("NOTIFYING " + successor.getGuid());
-            System.out.println("Client wrote: " + request);
+            //System.out.println("NOTIFYING " + successor.getGuid());
+            //System.out.println("Client wrote: " + request);
             this.sendMessage(successor.getSocketAddress(), request.encode());
         } catch (Exception e) {
             System.out.println("Could not send notify to Peer");

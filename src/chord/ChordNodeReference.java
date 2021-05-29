@@ -39,4 +39,13 @@ public class ChordNodeReference {
                 ", address=" + address +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if(getClass() != o.getClass()) return false;
+
+        ChordNodeReference obj = (ChordNodeReference) o;
+        return obj.guid == this.guid;
+    }
+
 }

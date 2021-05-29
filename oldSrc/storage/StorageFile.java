@@ -1,4 +1,4 @@
-package storage;
+package peer.storage;
 
 import peer.Peer;
 import utils.Utils;

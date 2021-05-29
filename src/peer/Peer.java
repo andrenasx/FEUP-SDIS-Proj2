@@ -1,6 +1,7 @@
 package peer;
 
 import chord.ChordNode;
+import chord.ChordNodeReference;
 import messages.protocol.BackupMessage;
 import sslengine.SSLEngineClient;
 import utils.Utils;
@@ -16,9 +17,16 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class Peer extends ChordNode implements PeerInit {
     private final String serviceAccessPoint;
+    private PeerStorage peerStorage;
+    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
     public Peer(String serviceAccessPoint, InetSocketAddress socketAddress, InetSocketAddress bootScoketAddress, boolean boot) throws Exception {
         super(socketAddress, bootScoketAddress, boot);
@@ -80,6 +88,9 @@ public class Peer extends ChordNode implements PeerInit {
             return;
         }
 
+        //creates storage
+        this.peerStorage = new PeerStorage(this.getSelfReference().getGuid());
+
         //starts periodic stabilization
         this.startPeriodicStabilize();
 
@@ -100,6 +111,7 @@ public class Peer extends ChordNode implements PeerInit {
     @Override
     public void backup(String filepath, int replicationDegree) {
         File file = new File(filepath); //"../files/18kb"
+        String filename = file.getName();
         BasicFileAttributes attr;
         String fileId;
 
@@ -107,24 +119,40 @@ public class Peer extends ChordNode implements PeerInit {
         try {
             attr = Files.readAttributes(file.toPath(),BasicFileAttributes.class);
             fileId = Utils.generateHashForFile(filepath, attr);
+            fileSize = attr.size();
 
-            fileChannel = FileChannel.open(file.toPath());
+            final int[] guids = new Random().ints(0, Utils.CHORD_MAX_PEERS).distinct().limit(replicationDegree * 4L).toArray();
 
-            SSLEngineClient client = new SSLEngineClient(this.getContext(), this.getBootReference().getSocketAddress());
-            client.connect();
+            System.out.println("GUIDS:");
+            for(int x : guids){
+                System.out.println(x);
+            }
 
-            BackupMessage bm = new BackupMessage(this.getSelfReference(), (fileId + " " + file.getName() + " " + attr.size()).getBytes(StandardCharsets.UTF_8));
+            System.out.println("ADDING PEERS TO STORE");
+            List<ChordNodeReference> peersToStore = new ArrayList<>();
+            for(int guid : guids){
+                System.out.println("Searching successor for: " + guid);
+                ChordNodeReference peer = findSuccessor(guid);
+                if(peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.contains(peer)){
+                    peersToStore.add(peer);
+                    System.out.println("Adding peer to store: " + peer);
+                }
+                else if(peersToStore.size() == replicationDegree)
+                    break;
+            }
+            System.out.println("DONE ADDING PEERS TO STORE");
 
-            client.write(bm.encode());
-            System.out.println("Sent start backup message to peer");
+            if(peersToStore.size() == 0) {
+                System.out.println("No available peers to backup file.");
+                return;
+            }
 
-            client.read(200);
-            System.out.println("Received start backup response from peer");
+            BackupMessage bm = new BackupMessage(this.getSelfReference(), (fileId + " " + filename + " " + attr.size()).getBytes(StandardCharsets.UTF_8));
+            StorageFile storageFile = new StorageFile(this.getSelfReference(), fileId, filename, fileSize, replicationDegree);
 
-            System.out.println("Sending file to Peer...");
-            client.sendFile(fileChannel);
-            System.out.println("File sent to Peer...");
-
+            for(ChordNodeReference peer : peersToStore){
+                this.scheduler.submit(() -> this.backupFile(bm, peer, file, storageFile));
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

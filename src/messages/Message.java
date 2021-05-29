@@ -46,7 +46,6 @@ public abstract class Message {
 
         String type = header[0];
         String action = header[1];
-        System.out.println("HEADER 2: " + header[2]);
         int guid = Integer.parseInt(header[2]);
         String address = header[3];
         int port = Integer.parseInt(header[4]);
