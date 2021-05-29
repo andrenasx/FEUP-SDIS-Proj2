@@ -3,6 +3,8 @@ package peer;
 import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.protocol.BackupMessage;
+import peer.storage.PeerStorage;
+import peer.storage.StorageFile;
 import sslengine.SSLEngineClient;
 import utils.Utils;
 
@@ -114,8 +116,8 @@ public class Peer extends ChordNode implements PeerInit {
         String filename = file.getName();
         BasicFileAttributes attr;
         String fileId;
+        long fileSize;
 
-        FileChannel fileChannel = null;
         try {
             attr = Files.readAttributes(file.toPath(),BasicFileAttributes.class);
             fileId = Utils.generateHashForFile(filepath, attr);
@@ -157,23 +159,6 @@ public class Peer extends ChordNode implements PeerInit {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
-
-        /*byte[] body = null;
-        try {
-            body = Files.readAllBytes(Paths.get("../files/18kb"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Couldn't read all bytes from file");
-        }
-        BackupMessage bm = new BackupMessage(this.getSelfReference(), body);
-        try {
-            this.sendMessage(this.getBootReference().getSocketAddress(), bm.encode());
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("coudlnt send message");
-        }*/
     }
 
     @Override
@@ -194,5 +179,33 @@ public class Peer extends ChordNode implements PeerInit {
     @Override
     public String state() throws RemoteException {
         return this.chordState();
+    }
+
+
+    public void backupFile(BackupMessage message, ChordNodeReference storingPeer, File file, StorageFile storageFile) {
+        System.out.println("Submited backup for file " + file.getName() + " for peer " + storingPeer.getGuid());
+        try {
+            SSLEngineClient client = new SSLEngineClient(this.getContext(), storingPeer.getSocketAddress());
+            client.connect();
+
+            client.write(message.encode());
+            System.out.println("Sent start backup message to peer");
+
+            client.read(200);
+            System.out.println("Received start backup response from peer");
+
+            FileChannel fileChannel = FileChannel.open(file.toPath());
+            System.out.println("Sending file to Peer...");
+            client.sendFile(fileChannel);
+            System.out.println("File sent to Peer...");
+
+            storageFile.addStoringNode(storingPeer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public PeerStorage getPeerStorage(){
+        return peerStorage;
     }
 }

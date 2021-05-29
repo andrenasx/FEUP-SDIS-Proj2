@@ -37,8 +37,9 @@ public abstract class Utils {
     }
 
     public static String generateHashForFile(String filename, BasicFileAttributes attributes) {
-        String modificationDate = String.valueOf(attributes.lastModifiedTime().toMillis());
-        return hashToASCII(filename + modificationDate);
+        String creationTime = String.valueOf(attributes.creationTime().toMillis());
+        String modificationTime = String.valueOf(attributes.lastModifiedTime().toMillis());
+        return hashToASCII(filename + creationTime + modificationTime);
     }
 
     /**

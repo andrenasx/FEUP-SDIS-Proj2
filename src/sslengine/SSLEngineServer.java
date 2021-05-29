@@ -105,8 +105,8 @@ public class SSLEngineServer extends SSLEngineComms {
                             data = read(channel, engine);
 
                         } catch (Exception e) {
-                            System.out.println("Error reading message...");
-                            e.printStackTrace();
+                            System.out.println("Error reading message... " + e.getMessage());
+                            //e.printStackTrace();
                         }
 
                         // data is null if error or end of connection
