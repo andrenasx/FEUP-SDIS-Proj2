@@ -34,9 +34,9 @@ public class ChordNode extends SSLEnginePeer {
     }
 
     protected void startPeriodicStabilize() {
-        scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
+        /*scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
-        scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);*/
     }
 
     public synchronized ChordNodeReference getPredecessor() {

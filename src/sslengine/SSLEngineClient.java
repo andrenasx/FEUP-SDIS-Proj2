@@ -1,9 +1,13 @@
 package sslengine;
 
+import utils.Utils;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Random;
 
@@ -115,4 +119,39 @@ public class SSLEngineClient extends SSLEngineComms {
         executor.shutdown();
         //System.out.println("Goodbye from Client!");
     }
+
+    public void sendFile(FileChannel fileChannel) {
+        try {
+            super.sendFile(socketChannel, engine, fileChannel);
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
+        }
+    }
+
+    public void receiveFile(FileChannel fileChannel, long size) {
+        try {
+            final long started = System.currentTimeMillis();
+
+            long total = 0;
+            peerAppData = ByteBuffer.allocate(Utils.CHUNK_SIZE);
+            while (true) {
+                long bytes;
+                bytes = super.receiveFile(socketChannel, engine, fileChannel);
+                total += bytes;
+
+                System.out.printf("Receiving (%s): %s (%s)\r",
+                        Utils.prettySize(size),
+                        Utils.progressBar(total, size),
+                        Utils.rate(started, System.currentTimeMillis(), total)
+                );
+                if (bytes < 0 || total == size) {
+                    System.out.printf("Received (%s): %s\n",  Utils.prettySize(size), Utils.progressBar(total, size));
+                    return;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
+        }
+    }
+
 }

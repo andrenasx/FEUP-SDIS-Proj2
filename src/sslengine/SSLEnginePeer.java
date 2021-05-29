@@ -1,7 +1,14 @@
 package sslengine;
 
+import utils.Utils;
+
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 
 public class SSLEnginePeer extends SSLEngineServer {
     private SSLContext context;
@@ -41,5 +48,9 @@ public class SSLEnginePeer extends SSLEngineServer {
         client.connect();
         client.write(message);
         // client.shutdown(); Shutdown is done at the Server
+    }
+
+    public SSLContext getContext() {
+        return context;
     }
 }

@@ -3,6 +3,7 @@ package messages;
 import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.chord.ChordMessage;
+import messages.protocol.ProtocolMessage;
 import tasks.Task;
 
 import javax.net.ssl.SSLEngine;
@@ -45,6 +46,7 @@ public abstract class Message {
 
         String type = header[0];
         String action = header[1];
+        System.out.println("HEADER 2: " + header[2]);
         int guid = Integer.parseInt(header[2]);
         String address = header[3];
         int port = Integer.parseInt(header[4]);
@@ -59,6 +61,7 @@ public abstract class Message {
             case "CHORD":
                 return ChordMessage.create(action, senderReference, body);
             case "PROTOCOL":
+                return ProtocolMessage.create(action, senderReference, body);
             default:
                 throw new Exception("Unknown Message type");
         }

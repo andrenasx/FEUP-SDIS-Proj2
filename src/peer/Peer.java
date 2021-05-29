@@ -1,12 +1,17 @@
 package peer;
 
 import chord.ChordNode;
-import messages.BackupMessage;
+import messages.protocol.BackupMessage;
+import sslengine.SSLEngineClient;
+import utils.Utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -94,7 +99,40 @@ public class Peer extends ChordNode implements PeerInit {
 
     @Override
     public void backup(String filepath, int replicationDegree) {
-        byte[] body = null;
+        File file = new File(filepath); //"../files/18kb"
+        BasicFileAttributes attr;
+        String fileId;
+
+        FileChannel fileChannel = null;
+        try {
+            attr = Files.readAttributes(file.toPath(),BasicFileAttributes.class);
+            fileId = Utils.generateHashForFile(filepath, attr);
+
+            fileChannel = FileChannel.open(file.toPath());
+
+            SSLEngineClient client = new SSLEngineClient(this.getContext(), this.getBootReference().getSocketAddress());
+            client.connect();
+
+            BackupMessage bm = new BackupMessage(this.getSelfReference(), (fileId + " " + file.getName() + " " + attr.size()).getBytes(StandardCharsets.UTF_8));
+
+            client.write(bm.encode());
+            System.out.println("Sent start backup message to peer");
+
+            client.read(200);
+            System.out.println("Received start backup response from peer");
+
+            System.out.println("Sending file to Peer...");
+            client.sendFile(fileChannel);
+            System.out.println("File sent to Peer...");
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
+        /*byte[] body = null;
         try {
             body = Files.readAllBytes(Paths.get("../files/18kb"));
         } catch (IOException e) {
@@ -107,7 +145,7 @@ public class Peer extends ChordNode implements PeerInit {
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("coudlnt send message");
-        }
+        }*/
     }
 
     @Override

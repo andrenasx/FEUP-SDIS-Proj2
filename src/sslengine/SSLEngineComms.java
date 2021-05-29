@@ -1,11 +1,16 @@
 package sslengine;
 
+import utils.Utils;
+
 import javax.net.ssl.*;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -123,6 +128,112 @@ public abstract class SSLEngineComms {
                 default:
                     throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
             }
+        }
+    }
+
+    protected int receiveFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) throws IOException {
+        peerNetData = ByteBuffer.allocate(Utils.TLS_CHUNK_SIZE);
+        peerNetData.clear();
+        socketChannel.socket().setSoTimeout(1000);
+        ReadableByteChannel byteChannel = Channels.newChannel(socketChannel.socket().getInputStream());
+
+        int bytesRead = 0;
+        do {
+            int read;
+            try {
+                read = byteChannel.read(peerNetData);
+            } catch (Exception e) {
+                System.out.println("Reached last chunk");
+                break;
+            }
+            System.out.println("Read in single read: " + read);
+            bytesRead += read;
+        } while (bytesRead % Utils.TLS_CHUNK_SIZE != 0);
+
+        peerNetData.flip();
+
+        System.out.println("Bytes read from socket: " + bytesRead);
+
+        int bytesConsumed = 0;
+
+        ByteBuffer aux;
+
+        if (bytesRead > 0) {
+            int bytesWritten = 0;
+            while (bytesConsumed != bytesRead) {
+                peerAppData.clear();
+                byte[] sub = new byte[Math.min(Utils.TLS_CHUNK_SIZE, bytesRead - bytesConsumed)];
+                peerNetData.get(sub, 0, Math.min(Utils.TLS_CHUNK_SIZE, bytesRead - bytesConsumed));
+                aux = ByteBuffer.wrap(sub);
+
+                SSLEngineResult result = engine.unwrap(aux, peerAppData);
+                bytesConsumed += result.bytesConsumed();
+
+                switch (result.getStatus()) {
+                    case OK:
+                        peerAppData.flip();
+                        bytesWritten += fileChannel.write(peerAppData);
+                        break;
+                    case BUFFER_OVERFLOW:
+                        peerAppData = enlargeApplicationBuffer(engine, peerAppData);
+                        break;
+                    case BUFFER_UNDERFLOW:
+                        peerNetData = handleBufferUnderflow(engine, peerNetData);
+                        break;
+                    case CLOSED:
+                        //System.out.println("Other wants to close connection...");
+                        closeConnection(socketChannel, engine);
+                        //System.out.println("Goodbye other!");
+                        return -1;
+                    default:
+                        throw new IllegalStateException("Invalid SSL Status: " + result.getStatus());
+                }
+            }
+            System.out.println("Wrote packet: " + bytesWritten);
+            return bytesWritten;
+        }
+        else if (bytesRead < 0) {
+            //System.out.println("Received end of stream. Will try to close connection with client...");
+            handleEndOfStream(socketChannel, engine);
+            //System.out.println("Goodbye client!");
+        }
+        return bytesRead;
+    }
+
+    protected void sendFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) throws IOException {
+        myAppData.clear();
+        myAppData = ByteBuffer.allocate(Utils.CHUNK_SIZE);
+        int bytesRead = fileChannel.read(myAppData);
+
+        while (bytesRead != -1) {
+            System.out.println("Bytes read from file: " + bytesRead);
+            myAppData.flip();
+            while (myAppData.hasRemaining()) {
+                myNetData.clear();
+                SSLEngineResult result = engine.wrap(myAppData, myNetData);
+                switch (result.getStatus()) {
+                    case OK:
+                        myNetData.flip();
+                        int bytesWritten = 0;
+                        while (myNetData.hasRemaining()) {
+                            bytesWritten += socketChannel.write(myNetData);
+                        }
+                        System.out.println("Bytes written to socket: " + bytesWritten);
+                        break;
+                    case BUFFER_OVERFLOW:
+                        myNetData = enlargePacketBuffer(engine, myNetData);
+                        break;
+                    case BUFFER_UNDERFLOW:
+                        throw new SSLException("Buffer underflow occured after a wrap. I don't think we should ever get here.");
+                    case CLOSED:
+                        closeConnection(socketChannel, engine);
+                        return;
+                    default:
+                        throw new IllegalStateException("Invalid SSL Status: " + result.getStatus());
+                }
+            }
+            myAppData.clear();
+            bytesRead = fileChannel.read(myAppData);
         }
     }
 

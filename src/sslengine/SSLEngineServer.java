@@ -2,16 +2,16 @@ package sslengine;
 
 import chord.ChordNode;
 import messages.Message;
+import messages.protocol.BackupMessage;
+import utils.Utils;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.concurrent.ScheduledExecutorService;
@@ -114,6 +114,8 @@ public class SSLEngineServer extends SSLEngineComms {
                             try {
                                 Message request = Message.create(data);
                                 System.out.println("Server received: " + request);
+                                if(request instanceof BackupMessage)
+                                    key.cancel();
                                 this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
                             } catch (Exception e) {
                                 System.out.println("Couldn't parse request message");
@@ -182,6 +184,40 @@ public class SSLEngineServer extends SSLEngineComms {
         } catch (IOException e) {
             System.err.println("Couldn't close connection in Server");
             e.printStackTrace();
+        }
+    }
+
+    public void sendFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) {
+        try {
+            super.sendFile(socketChannel, engine, fileChannel);
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
+        }
+    }
+
+    public void receiveFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel, long size) {
+        try {
+            final long started = System.currentTimeMillis();
+
+            long total = 0;
+            peerAppData = ByteBuffer.allocate(Utils.CHUNK_SIZE);
+            while (true) {
+                long bytes;
+                bytes = super.receiveFile(socketChannel, engine, fileChannel);
+                total += bytes;
+
+                System.out.printf("Receiving (%s): %s (%s)\r",
+                        Utils.prettySize(size),
+                        Utils.progressBar(total, size),
+                        Utils.rate(started, System.currentTimeMillis(), total)
+                );
+                if (bytes < 0 || total == size) {
+                    System.out.printf("Received (%s): %s\n",  Utils.prettySize(size), Utils.progressBar(total, size));
+                    return;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
         }
     }
 
