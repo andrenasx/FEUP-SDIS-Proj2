@@ -19,6 +19,8 @@ public abstract class ProtocolMessage extends Message {
                 return new BackupMessage(senderReference, body);
             case "OK":
                 return new OkMessage(senderReference);
+            case "ERROR":
+                return new ErrorMessage(senderReference, body);
             default:
                 throw new Exception("Unknown Protocol action");
         }

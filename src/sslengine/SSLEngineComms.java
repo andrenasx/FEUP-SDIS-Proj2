@@ -146,13 +146,13 @@ public abstract class SSLEngineComms {
                 System.out.println("Reached last chunk");
                 break;
             }
-            System.out.println("Read in single read: " + read);
+            //System.out.println("Read in single read: " + read);
             bytesRead += read;
         } while (bytesRead % Utils.TLS_CHUNK_SIZE != 0);
 
         peerNetData.flip();
 
-        System.out.println("Bytes read from socket: " + bytesRead);
+        //System.out.println("Bytes read from socket: " + bytesRead);
 
         int bytesConsumed = 0;
 

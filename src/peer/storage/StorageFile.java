@@ -26,7 +26,7 @@ public class StorageFile {
         this.storingNodes.addAll(nodes);
     }
 
-    public void addStoringNode(ChordNodeReference node) {
+    public synchronized void addStoringNode(ChordNodeReference node) {
         this.storingNodes.add(node);
     }
 

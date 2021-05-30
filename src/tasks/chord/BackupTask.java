@@ -27,25 +27,19 @@ public class BackupTask extends Task {
         String fileId = ((BackupMessage) message).getFileId();
         long size = ((BackupMessage) message).getSize();
         String filename = ((BackupMessage) message).getFilename();
-        //int replicationDegree = ((BackupMessage) message).getReplicationDegree();
+        int replicationDegree = ((BackupMessage) message).getReplicationDegree();
 
-        //test capacity
+        // TODO check if peer has space or already has file, send ErrorMessage
         System.out.println("Testing capacity.. (to be implemented)");
 
         try {
             FileOutputStream outputStream = new FileOutputStream(((Peer)node).getPeerStorage().getStoragePath() + filename);
             FileChannel fileChannel = outputStream.getChannel();
-            System.out.println("Ready to receive file...");
+            System.out.println("[BACKUP] Ready to receive file...");
 
-            OkMessage response = new OkMessage(node.getSelfReference());
-
-            try {
-                node.write(channel, engine, response.encode());
-                System.out.println("Server sent: " + response);
-            } catch (IOException e) {
-                System.err.println("Couldn't send GUID");
-                e.printStackTrace();
-            }
+            OkMessage okay = new OkMessage(node.getSelfReference());
+            node.write(channel, engine, okay.encode());
+            //System.out.println("Server sent: " + response);
 
             channel.configureBlocking(true);
             this.node.receiveFile(channel, engine, fileChannel, size);
@@ -53,18 +47,10 @@ public class BackupTask extends Task {
             System.out.println("Received file!");
             System.out.println("Sending OK to client so they can close connection");
 
-            OkMessage confirm = new OkMessage(node.getSelfReference());
-
-            try {
-                node.write(channel, engine, confirm.encode());
-                //System.out.println("Server sent: " + response);
-            } catch (IOException e) {
-                System.err.println("Couldn't send GUID");
-                e.printStackTrace();
-            }
-
+            node.write(channel, engine, okay.encode());
+            //System.out.println("Server sent: " + response);
         } catch (IOException e) {
-            System.out.println("Error receiving file");
+            System.out.println("[ERROR-BACKUP] Error receiving file");
             e.printStackTrace();
         }
 

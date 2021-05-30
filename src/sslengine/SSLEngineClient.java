@@ -139,13 +139,7 @@ public class SSLEngineClient extends SSLEngineComms {
                 bytes = super.receiveFile(socketChannel, engine, fileChannel);
                 total += bytes;
 
-                System.out.printf("Receiving (%s): %s (%s)\r",
-                        Utils.prettySize(size),
-                        Utils.progressBar(total, size),
-                        Utils.rate(started, System.currentTimeMillis(), total)
-                );
                 if (bytes < 0 || total == size) {
-                    System.out.printf("Received (%s): %s\n",  Utils.prettySize(size), Utils.progressBar(total, size));
                     return;
                 }
             }

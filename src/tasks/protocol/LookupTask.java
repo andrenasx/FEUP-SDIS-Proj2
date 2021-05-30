@@ -20,7 +20,7 @@ public class LookupTask extends Task {
     public void run() {
         //sets guid
         int requestedId = ((LookupMessage) this.message).getRequestedGuid();
-        System.out.println("LookupTask searching for successor of " + requestedId);
+        //System.out.println("LookupTask searching for successor of " + requestedId);
 
         //send find successor after receiving guid
         ChordNodeReference reference = node.findSuccessor(requestedId);
@@ -29,9 +29,9 @@ public class LookupTask extends Task {
 
         try {
             node.write(channel, engine, response.encode());
-            System.out.println("Server sent: " + response);
+            //System.out.println("Server sent: " + response);
         } catch (IOException e) {
-            System.err.println("Couldn't send LOOKUP");
+            System.err.println("[ERROR-CHORD] Couldn't send LOOKUP");
             e.printStackTrace();
         }
     }

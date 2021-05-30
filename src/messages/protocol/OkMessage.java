@@ -8,8 +8,7 @@ import javax.net.ssl.SSLEngine;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
-public class OkMessage extends ProtocolMessage{
-
+public class OkMessage extends ProtocolMessage {
     public OkMessage(ChordNodeReference senderReference) {
         super("OK", senderReference, null);
     }

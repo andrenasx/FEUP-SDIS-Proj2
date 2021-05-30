@@ -68,12 +68,12 @@ public class PeerStorage implements Serializable {
     }
 
 
-    public void storeFile(StorageFile storageFile) throws IOException {
+    public void addStoredFile(StorageFile storageFile) {
         storedFiles.put(storageFile.getFileId(), storageFile);
         this.occupySpace(storageFile.getSize());
     }
 
-    public void sendFile(StorageFile storageFile) throws IOException {
+    public void addSentFile(StorageFile storageFile) {
         if(this.sentFiles.containsKey(storageFile.getFileId())){
             for(ChordNodeReference node : this.sentFiles.get(storageFile.getFileId()).getStoringNodes()){
                 storageFile.addStoringNode(node);

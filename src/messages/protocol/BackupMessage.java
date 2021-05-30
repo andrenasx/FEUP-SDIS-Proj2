@@ -10,18 +10,20 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
 public class BackupMessage extends ProtocolMessage {
-    String fileId;
-    String filename;
-    long size;
+    private final String fileId;
+    private final String filename;
+    private final long size;
+    private final int replicationDegree;
 
     public BackupMessage(ChordNodeReference senderReference, byte[] body) {
         super("BACKUP", senderReference, body);
 
-        String[] bodyParts = new String(body).split(" ", 3);
+        String[] bodyParts = new String(body).split(" ", 4);
 
         this.fileId = bodyParts[0];
         this.filename = bodyParts[1];
-        this.size = Integer.parseInt(bodyParts[2]);
+        this.size = Long.parseLong(bodyParts[2]);
+        this.replicationDegree = Integer.parseInt(bodyParts[3]);
     }
 
     @Override
@@ -49,16 +51,19 @@ public class BackupMessage extends ProtocolMessage {
         return new BackupTask(this, node, channel, engine);
     }
 
-    public String getFileId(){
+    public String getFileId() {
         return fileId;
     }
 
-    public long getSize(){
-        return size;
-    }
-
-    public String getFilename(){
+    public String getFilename() {
         return filename;
     }
 
+    public long getSize() {
+        return size;
+    }
+
+    public int getReplicationDegree() {
+        return replicationDegree;
+    }
 }

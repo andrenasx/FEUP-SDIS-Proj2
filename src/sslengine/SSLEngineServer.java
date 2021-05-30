@@ -196,6 +196,7 @@ public class SSLEngineServer extends SSLEngineComms {
     }
 
     public void receiveFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel, long size) {
+        peerNetData = ByteBuffer.allocate(Utils.TLS_CHUNK_SIZE);
         try {
             final long started = System.currentTimeMillis();
 
@@ -206,13 +207,7 @@ public class SSLEngineServer extends SSLEngineComms {
                 bytes = super.receiveFile(socketChannel, engine, fileChannel);
                 total += bytes;
 
-                System.out.printf("Receiving (%s): %s (%s)\r",
-                        Utils.prettySize(size),
-                        Utils.progressBar(total, size),
-                        Utils.rate(started, System.currentTimeMillis(), total)
-                );
                 if (bytes < 0 || total == size) {
-                    System.out.printf("Received (%s): %s\n",  Utils.prettySize(size), Utils.progressBar(total, size));
                     return;
                 }
             }

@@ -2,7 +2,10 @@ package peer;
 
 import chord.ChordNode;
 import chord.ChordNodeReference;
+import messages.Message;
 import messages.protocol.BackupMessage;
+import messages.protocol.ErrorMessage;
+import messages.protocol.OkMessage;
 import peer.storage.PeerStorage;
 import peer.storage.StorageFile;
 import sslengine.SSLEngineClient;
@@ -20,8 +23,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -55,8 +60,7 @@ public class Peer extends ChordNode implements PeerInit {
             InetSocketAddress socketAddress;
             if (boot) {
                 socketAddress = bootSocketAddress;
-            }
-            else {
+            } else {
                 socketAddress = new InetSocketAddress("127.0.0.1", 0);
             }
 
@@ -118,44 +122,56 @@ public class Peer extends ChordNode implements PeerInit {
         String fileId;
         long fileSize;
 
+        System.out.println("[PEER] Starting backup for " + filename);
+
         try {
-            attr = Files.readAttributes(file.toPath(),BasicFileAttributes.class);
+            attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
             fileId = Utils.generateHashForFile(filepath, attr);
             fileSize = attr.size();
 
             final int[] guids = new Random().ints(0, Utils.CHORD_MAX_PEERS).distinct().limit(replicationDegree * 4L).toArray();
 
-            System.out.println("GUIDS:");
-            for(int x : guids){
-                System.out.println(x);
-            }
+            System.out.println("Generated GUIDS: " + Arrays.toString(guids));
 
-            System.out.println("ADDING PEERS TO STORE");
             List<ChordNodeReference> peersToStore = new ArrayList<>();
-            for(int guid : guids){
-                System.out.println("Searching successor for: " + guid);
+            for (int guid : guids) {
+                //System.out.println("Searching successor for: " + guid);
                 ChordNodeReference peer = findSuccessor(guid);
-                if(peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.contains(peer)){
+                if (peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.contains(peer)) {
                     peersToStore.add(peer);
-                    System.out.println("Adding peer to store: " + peer);
+                    //System.out.println("Adding peer to store: " + peer);
+                    if (peersToStore.size() == replicationDegree) break;
                 }
-                else if(peersToStore.size() == replicationDegree)
-                    break;
             }
-            System.out.println("DONE ADDING PEERS TO STORE");
 
-            if(peersToStore.size() == 0) {
+            if (peersToStore.size() == 0) {
                 System.out.println("No available peers to backup file.");
                 return;
             }
 
-            BackupMessage bm = new BackupMessage(this.getSelfReference(), (fileId + " " + filename + " " + attr.size()).getBytes(StandardCharsets.UTF_8));
-            StorageFile storageFile = new StorageFile(this.getSelfReference(), fileId, filename, fileSize, replicationDegree);
+            StringBuilder sb = new StringBuilder("Storing GUIDS: ");
+            for (ChordNodeReference node : peersToStore) {
+                sb.append(node.getGuid()).append("; ");
+            }
+            System.out.println(sb);
 
-            for(ChordNodeReference peer : peersToStore){
-                this.scheduler.submit(() -> this.backupFile(bm, peer, file, storageFile));
+            BackupMessage bm = new BackupMessage(this.getSelfReference(), (fileId + " " + filename + " " + attr.size() + " " + replicationDegree).getBytes(StandardCharsets.UTF_8));
+            StorageFile storageFile = new StorageFile(this.getSelfReference(), fileId, filename, fileSize, replicationDegree);
+            List<Future<String>> backups = new ArrayList<>();
+
+            for (ChordNodeReference peer : peersToStore) {
+                backups.add(this.scheduler.submit(() -> this.backupFile(bm, peer, file, storageFile)));
             }
 
+            StringBuilder sbackups = new StringBuilder("Result for " + filename);
+            //Wait for backups to finish and print result
+            for (Future<String> backup : backups) {
+                sbackups.append(backup.get()).append("\n");
+            }
+
+            this.peerStorage.addSentFile(storageFile);
+
+            System.out.println(sbackups);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -182,30 +198,61 @@ public class Peer extends ChordNode implements PeerInit {
     }
 
 
-    public void backupFile(BackupMessage message, ChordNodeReference storingPeer, File file, StorageFile storageFile) {
-        System.out.println("Submited backup for file " + file.getName() + " for peer " + storingPeer.getGuid());
+    public String backupFile(BackupMessage message, ChordNodeReference storingPeer, File file, StorageFile storageFile) {
+        System.out.println("[BACKUP] Submited backup on file " + file.getName() + " for peer " + storingPeer.getGuid());
         try {
             SSLEngineClient client = new SSLEngineClient(this.getContext(), storingPeer.getSocketAddress());
             client.connect();
 
-            client.write(message.encode());
-            System.out.println("Sent start backup message to peer");
+            Message serverreply;
 
-            client.read(200);
-            System.out.println("Received start backup response from peer");
+            client.write(message.encode());
+            //System.out.println("Sent start backup message to peer");
+
+            serverreply = Message.create(client.read(200));
+            if (serverreply instanceof OkMessage) {
+                // continue
+            }
+            else {
+                client.shutdown();
+
+                if(serverreply instanceof ErrorMessage) {
+                    client.shutdown();
+
+
+                    if (((ErrorMessage) serverreply).getError().equals("NOSPACE")) {
+                        return "Peer " + storingPeer.getGuid() + " does not have enough space to store the file";
+                    }
+                    else if (((ErrorMessage) serverreply).getError().equals("HAVEFILE")) {
+                        return "Peer " + storingPeer.getGuid() + " already has requested file backed up";
+                    }
+
+                }
+                else {
+                    return "Received unexpected reply from Peer " + storingPeer.getGuid();
+                }
+            }
+
+            //System.out.println("Received start backup response from peer");
 
             FileChannel fileChannel = FileChannel.open(file.toPath());
-            System.out.println("Sending file to Peer...");
+            //System.out.println("Sending file to Peer...");
             client.sendFile(fileChannel);
-            System.out.println("File sent to Peer...");
+            //System.out.println("File sent to Peer...");
+
+            client.read(200);
 
             storageFile.addStoringNode(storingPeer);
+            client.shutdown();
+            return "Successful backup on file " + file.getName();
         } catch (Exception e) {
+            System.err.println("Couldn't backup file");
             e.printStackTrace();
+            return "Failed backup on file " + file.getName();
         }
     }
 
-    public PeerStorage getPeerStorage(){
+    public PeerStorage getPeerStorage() {
         return peerStorage;
     }
 }

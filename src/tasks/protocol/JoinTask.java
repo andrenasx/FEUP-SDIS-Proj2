@@ -43,7 +43,7 @@ public class JoinTask extends Task {
             node.write(channel, engine, response.encode());
             //System.out.println("Server sent: " + response);
         } catch (IOException e) {
-            System.err.println("Couldn't send GUID");
+            System.err.println("[ERROR-CHORD] Couldn't send GUID");
             e.printStackTrace();
         }
     }

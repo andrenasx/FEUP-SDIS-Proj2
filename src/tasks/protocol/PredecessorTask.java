@@ -27,9 +27,9 @@ public class PredecessorTask extends Task {
 
         try {
             node.write(channel, engine, response.encode());
-            System.out.println("Server sent: " + response);
+            //System.out.println("Server sent: " + response);
         } catch (IOException e) {
-            System.err.println("Couldn't send PREDECESSOREPLY");
+            System.err.println("[ERROR-CHORD] Couldn't send PREDECESSOREPLY");
             e.printStackTrace();
         }
     }
