@@ -1,6 +1,7 @@
 package tasks.chord;
 
 import messages.protocol.BackupMessage;
+import messages.protocol.ErrorMessage;
 import messages.protocol.OkMessage;
 import peer.Peer;
 import tasks.Task;
@@ -18,14 +19,25 @@ public class BackupTask extends Task {
     public void run() {
         // TODO check if peer has space or already has file, send ErrorMessage
         System.out.println("Testing capacity.. (to be implemented)");
+        BackupMessage backupMessage = (BackupMessage) message;
+        try (FileOutputStream fos = new FileOutputStream(peer.getPeerStorage().getStoragePath() + (backupMessage.getStorageFile().getFileId()))) {
+            if(peer.getPeerStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())){
+                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "HAVEFILE");
+                peer.sendMessage(socket, error);
+            }
+            else if(peer.getPeerStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())){
+                fos.write(backupMessage.getFileData());
+                System.out.println("[BACKUP] Ready to receive file...");
 
-        try (FileOutputStream fos = new FileOutputStream(peer.getPeerStorage().getStoragePath() + ((BackupMessage) message).getStorageFile().getFileId())) {
-            fos.write(((BackupMessage) message).getFileData());
-            System.out.println("[BACKUP] Ready to receive file...");
+                OkMessage okay = new OkMessage(peer.getSelfReference());
+                peer.sendMessage(socket, okay);
+                peer.getPeerStorage().addStoredFile(backupMessage.getStorageFile());
+            }
+            else{
+                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "FULL");
+                peer.sendMessage(socket, error);
+            }
 
-            OkMessage okay = new OkMessage(peer.getSelfReference());
-            peer.sendMessage(socket, okay);
-            peer.getPeerStorage().addStoredFile(((BackupMessage) message).getStorageFile());
         } catch (Exception e) {
             e.printStackTrace();
         }

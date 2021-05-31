@@ -66,6 +66,9 @@ public class PeerStorage implements Serializable {
         }
     }
 
+    public boolean hasStoredFile(String fileId){
+        return this.storedFiles.containsKey(fileId);
+    }
 
     public void addStoredFile(StorageFile storageFile) {
         storedFiles.put(storageFile.getFileId(), storageFile);
