@@ -4,7 +4,7 @@ import chord.ChordNodeReference;
 import messages.Message;
 import peer.Peer;
 import peer.storage.StorageFile;
-import tasks.chord.BackupTask;
+import tasks.protocol.BackupTask;
 
 import javax.net.ssl.SSLSocket;
 

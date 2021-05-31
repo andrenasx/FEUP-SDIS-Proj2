@@ -3,7 +3,7 @@ package messages.protocol;
 import chord.ChordNodeReference;
 import messages.Message;
 import peer.Peer;
-import tasks.Task;
+import tasks.protocol.RestoreTask;
 
 import javax.net.ssl.SSLSocket;
 
@@ -16,8 +16,8 @@ public class RestoreMessage extends Message {
     }
 
     @Override
-    public Task getTask(Peer peer, SSLSocket socket) {
-        return null;
+    public RestoreTask getTask(Peer peer, SSLSocket socket) {
+        return new RestoreTask(this, peer, socket);
     }
 
     public String getFileId() {

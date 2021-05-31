@@ -66,7 +66,7 @@ public class PeerStorage implements Serializable {
         }
     }
 
-    public boolean hasStoredFile(String fileId){
+    public boolean hasStoredFile(String fileId) {
         return this.storedFiles.containsKey(fileId);
     }
 
@@ -86,6 +86,10 @@ public class PeerStorage implements Serializable {
 
     public StorageFile getSentFile(String filename) {
         return this.sentFiles.get(filename);
+    }
+
+    public StorageFile getStoredFile(String fileId) {
+        return this.storedFiles.get(fileId);
     }
 
     public synchronized void occupySpace(double space) {
@@ -110,6 +114,11 @@ public class PeerStorage implements Serializable {
 
     public String getStoragePath() {
         return storagePath;
+    }
+
+    public byte[] restoreFileData(String fileId) throws IOException {
+        File file = new File(this.storagePath + fileId);
+        return Files.readAllBytes(file.toPath());
     }
 
     @Override

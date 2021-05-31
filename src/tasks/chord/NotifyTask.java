@@ -1,4 +1,4 @@
-package tasks.protocol;
+package tasks.chord;
 
 import messages.chord.NotifyMessage;
 import peer.Peer;
