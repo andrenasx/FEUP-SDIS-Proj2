@@ -77,7 +77,9 @@ public class SSLSocketPeer implements Runnable {
     }
 
     public void sendMessage(SSLSocket clientSocket, Message message) throws IOException {
-        new ObjectOutputStream(clientSocket.getOutputStream()).writeObject(message);
+        ObjectOutputStream os = new ObjectOutputStream(clientSocket.getOutputStream());
+        os.writeObject(message);
+        os.flush();
     }
 
     public Message readMessage(SSLSocket clientSocket) throws Exception {
