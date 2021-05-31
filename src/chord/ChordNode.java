@@ -36,7 +36,7 @@ public class ChordNode extends SSLSocketPeer {
     protected void startPeriodicStabilize() {
         this.scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
         this.scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
-        //this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -113,11 +113,11 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         // Return node if we have an entry for it TODO
-        for (int i = Utils.CHORD_M; i >= 1; i--) {
+        /*for (int i = Utils.CHORD_M; i >= 1; i--) {
             ChordNodeReference node = this.getChordNodeReference(i);
             if (node != null && node.getGuid() == guid)
                 return node;
-        }
+        }*/
 
         ChordNodeReference closest = this.closestPrecedingNode(guid);
         //System.out.println("Closest to " + guid + ": " + closest);
@@ -193,9 +193,8 @@ public class ChordNode extends SSLSocketPeer {
             System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
 
             try {
-                SSLSocket clientSocket = this.createClient(this.predecessor.getSocketAddress());
-                this.closeClient(clientSocket);
-            } catch (IOException e) {
+                this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);
+            } catch (Exception e) {
                 System.err.println("Couldn't connect to predecessor");
                 this.predecessor = null;
             }

@@ -43,7 +43,7 @@ public class SSLSocketPeer implements Runnable {
     @Override
     public void run() {
         while (this.active) {
-            SSLSocket socket = null;
+            SSLSocket socket;
             try {
                 socket = (SSLSocket) this.serverSocket.accept();
 
@@ -65,10 +65,11 @@ public class SSLSocketPeer implements Runnable {
     }
 
     // CLIENT SIDE
-    public SSLSocket createClient(InetSocketAddress serverSocketAddress) throws IOException {
+    public SSLSocket createClient(InetSocketAddress serverSocketAddress, int timeout) throws IOException {
         SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket clientSocket = (SSLSocket) socketFactory.createSocket(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
         clientSocket.startHandshake();
+        clientSocket.setSoTimeout(timeout);
         return clientSocket;
     }
 
@@ -87,16 +88,31 @@ public class SSLSocketPeer implements Runnable {
     }
 
     public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend) throws Exception {
-        SSLSocket clientSocket = this.createClient(serverSocketAddress);
+        return this.sendAndReceiveMessage(serverSocketAddress, toSend, 0);
+    }
+
+    public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend, int timeout) throws Exception {
+        SSLSocket clientSocket = this.createClient(serverSocketAddress, timeout);
         this.sendMessage(clientSocket, toSend);
-        Message message = this.readMessage(clientSocket);
+        Message message;
+        try {
+            message = this.readMessage(clientSocket);
+        } catch (Exception e) {
+            clientSocket.close();
+            return null;
+        }
+
         clientSocket.close();
 
         return message;
     }
 
-    public void sendClientMessage(InetSocketAddress serverSocketAddress, Message toSend) throws IOException {
-        SSLSocket clientSocket = this.createClient(serverSocketAddress);
+    public void sendClientMessage(InetSocketAddress serverSocketAddress, Message toSend) throws Exception {
+        sendClientMessage(serverSocketAddress, toSend, 0);
+    }
+
+    public void sendClientMessage(InetSocketAddress serverSocketAddress, Message toSend, int timeout) throws IOException {
+        SSLSocket clientSocket = this.createClient(serverSocketAddress, timeout);
         this.sendMessage(clientSocket, toSend);
     }
 }
