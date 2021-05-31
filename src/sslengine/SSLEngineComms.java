@@ -1,16 +1,11 @@
 package sslengine;
 
-import utils.Utils;
-
 import javax.net.ssl.*;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -131,127 +126,6 @@ public abstract class SSLEngineComms {
         }
     }
 
-    protected int receiveFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) throws IOException {
-        peerNetData = ByteBuffer.allocate(Utils.TLS_CHUNK_SIZE);
-        peerNetData.clear();
-        socketChannel.socket().setSoTimeout(1000);
-        ReadableByteChannel byteChannel = Channels.newChannel(socketChannel.socket().getInputStream());
-
-        int bytesRead = 0;
-        do {
-            int read;
-            try {
-                read = byteChannel.read(peerNetData);
-            } catch (Exception e) {
-                System.out.println("Reached last chunk");
-                break;
-            }
-            //System.out.println("Read in single read: " + read);
-            bytesRead += read;
-        } while (bytesRead % Utils.TLS_CHUNK_SIZE != 0);
-
-        peerNetData.flip();
-
-        //System.out.println("Bytes read from socket: " + bytesRead);
-
-        int bytesConsumed = 0;
-
-        ByteBuffer aux;
-
-        if (bytesRead > 0) {
-            int bytesWritten = 0;
-            while (bytesConsumed != bytesRead) {
-                peerAppData.clear();
-                byte[] sub = new byte[Math.min(Utils.TLS_CHUNK_SIZE, bytesRead - bytesConsumed)];
-                peerNetData.get(sub, 0, Math.min(Utils.TLS_CHUNK_SIZE, bytesRead - bytesConsumed));
-                aux = ByteBuffer.wrap(sub);
-
-                SSLEngineResult result = engine.unwrap(aux, peerAppData);
-                bytesConsumed += result.bytesConsumed();
-
-                switch (result.getStatus()) {
-                    case OK:
-                        peerAppData.flip();
-                        bytesWritten += fileChannel.write(peerAppData);
-                        break;
-                    case BUFFER_OVERFLOW:
-                        peerAppData = enlargeApplicationBuffer(engine, peerAppData);
-                        break;
-                    case BUFFER_UNDERFLOW:
-                        peerNetData = handleBufferUnderflow(engine, peerNetData);
-                        break;
-                    case CLOSED:
-                        //System.out.println("Other wants to close connection...");
-                        closeConnection(socketChannel, engine);
-                        //System.out.println("Goodbye other!");
-                        return -1;
-                    default:
-                        throw new IllegalStateException("Invalid SSL Status: " + result.getStatus());
-                }
-            }
-            System.out.println("Wrote packet: " + bytesWritten);
-            return bytesWritten;
-        }
-        else if (bytesRead < 0) {
-            //System.out.println("Received end of stream. Will try to close connection with client...");
-            handleEndOfStream(socketChannel, engine);
-            //System.out.println("Goodbye client!");
-        }
-        return bytesRead;
-    }
-
-    protected void sendFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) throws IOException {
-        myAppData.clear();
-        myAppData = ByteBuffer.allocate(Utils.CHUNK_SIZE);
-        int bytesRead = fileChannel.read(myAppData);
-
-        while (bytesRead != -1) {
-            System.out.println("Bytes read from file: " + bytesRead);
-            myAppData.flip();
-            while (myAppData.hasRemaining()) {
-                myNetData.clear();
-                SSLEngineResult result = engine.wrap(myAppData, myNetData);
-                switch (result.getStatus()) {
-                    case OK:
-                        myNetData.flip();
-                        int bytesWritten = 0;
-                        while (myNetData.hasRemaining()) {
-                            bytesWritten += socketChannel.write(myNetData);
-                        }
-                        System.out.println("Bytes written to socket: " + bytesWritten);
-                        break;
-                    case BUFFER_OVERFLOW:
-                        myNetData = enlargePacketBuffer(engine, myNetData);
-                        break;
-                    case BUFFER_UNDERFLOW:
-                        throw new SSLException("Buffer underflow occured after a wrap. I don't think we should ever get here.");
-                    case CLOSED:
-                        closeConnection(socketChannel, engine);
-                        return;
-                    default:
-                        throw new IllegalStateException("Invalid SSL Status: " + result.getStatus());
-                }
-            }
-            myAppData.clear();
-            bytesRead = fileChannel.read(myAppData);
-        }
-    }
-
-    /**
-     * Implements the handshake protocol between two peers, required for the establishment of the SSL/TLS connection.
-     * During the handshake, encryption configuration information - such as the list of available cipher suites - will be exchanged
-     * and if the handshake is successful will lead to an established SSL/TLS session.
-     * <p>
-     * Handshake is also used during the end of the session, in order to properly close the connection between the two peers.
-     * A proper connection close will typically include the one peer sending a CLOSE message to another, and then wait for
-     * the other's CLOSE message to close the transport link. The other peer from his perspective would read a CLOSE message
-     * from his peer and then enter the handshake procedure to send his own CLOSE message as well.
-     *
-     * @param socketChannel - the socket channel that connects the two peers.
-     * @param engine        - the engine that will be used for encryption/decryption of the data exchanged with the other peer.
-     * @return True if the connection handshake was successful or false if an error occurred.
-     * @throws IOException - if an error occurs during read/write to the socket channel.
-     */
     protected boolean doHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
         //System.out.println("About to do handshake...");
 
@@ -387,15 +261,6 @@ public abstract class SSLEngineComms {
         return enlargeBuffer(buffer, engine.getSession().getApplicationBufferSize());
     }
 
-    /**
-     * Compares <code>sessionProposedCapacity<code> with buffer's capacity. If buffer's capacity is smaller,
-     * returns a buffer with the proposed capacity. If it's equal or larger, returns a buffer
-     * with capacity twice the size of the initial one.
-     *
-     * @param buffer                  - the buffer to be enlarged.
-     * @param sessionProposedCapacity - the minimum size of the new buffer, proposed by {@link SSLSession}.
-     * @return A new buffer with a larger capacity.
-     */
     protected ByteBuffer enlargeBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
         if (sessionProposedCapacity > buffer.capacity()) {
             buffer = ByteBuffer.allocate(sessionProposedCapacity);
@@ -406,17 +271,6 @@ public abstract class SSLEngineComms {
         return buffer;
     }
 
-    /**
-     * Handles {@link SSLEngineResult.Status#BUFFER_UNDERFLOW}. Will check if the buffer is already filled, and if there is no space problem
-     * will return the same buffer, so the client tries to read again. If the buffer is already filled will try to enlarge the buffer either to
-     * session's proposed size or to a larger capacity. A buffer underflow can happen only after an unwrap, so the buffer will always be a
-     * peerNetData buffer.
-     *
-     * @param buffer - will always be peerNetData buffer.
-     * @param engine - the engine used for encryption/decryption of the data exchanged between the two peers.
-     * @return The same buffer if there is no space problem or a new buffer with the same data but more space.
-     * @throws Exception
-     */
     protected ByteBuffer handleBufferUnderflow(SSLEngine engine, ByteBuffer buffer) {
         if (engine.getSession().getPacketBufferSize() < buffer.limit()) {
             return buffer;
@@ -429,34 +283,12 @@ public abstract class SSLEngineComms {
         }
     }
 
-    /**
-     * This method should be called when this peer wants to explicitly close the connection
-     * or when a close message has arrived from the other peer, in order to provide an orderly shutdown.
-     * <p/>
-     * It first calls {@link SSLEngine#closeOutbound()} which prepares this peer to send its own close message and
-     * sets {@link SSLEngine} to the <code>NEED_WRAP</code> state. Then, it delegates the exchange of close messages
-     * to the handshake method and finally, it closes socket channel.
-     *
-     * @param socketChannel - the transport link used between the two peers.
-     * @param engine        - the engine used for encryption/decryption of the data exchanged between the two peers.
-     * @throws IOException if an I/O error occurs to the socket channel.
-     */
     protected void closeConnection(SocketChannel socketChannel, SSLEngine engine) throws IOException {
         engine.closeOutbound();
         doHandshake(socketChannel, engine);
         socketChannel.close();
     }
 
-    /**
-     * In addition to orderly shutdowns, an unorderly shutdown may occur, when the transport link (socket channel)
-     * is severed before close messages are exchanged. This may happen by getting an -1 or {@link IOException}
-     * when trying to read from the socket channel, or an {@link IOException} when trying to write to it.
-     * In both cases {@link SSLEngine#closeInbound()} should be called and then try to follow the standard procedure.
-     *
-     * @param socketChannel - the transport link used between the two peers.
-     * @param engine        - the engine used for encryption/decryption of the data exchanged between the two peers.
-     * @throws IOException if an I/O error occurs to the socket channel.
-     */
     protected void handleEndOfStream(SocketChannel socketChannel, SSLEngine engine) throws IOException {
         try {
             engine.closeInbound();
@@ -466,15 +298,6 @@ public abstract class SSLEngineComms {
         closeConnection(socketChannel, engine);
     }
 
-    /**
-     * Creates the key managers required to initiate the {@link SSLContext}, using a JKS keystore as an input.
-     *
-     * @param filepath         - the path to the JKS keystore.
-     * @param keystorePassword - the keystore's password.
-     * @param keyPassword      - the key's passsword.
-     * @return {@link KeyManager} array that will be used to initiate the {@link SSLContext}.
-     * @throws Exception
-     */
     public static KeyManager[] createKeyManagers(String filepath, String keystorePassword, String keyPassword) throws Exception {
         KeyStore keyStore = KeyStore.getInstance("JKS");
         InputStream keyStoreIS = new FileInputStream(filepath);
@@ -490,14 +313,6 @@ public abstract class SSLEngineComms {
         return kmf.getKeyManagers();
     }
 
-    /**
-     * Creates the trust managers required to initiate the {@link SSLContext}, using a JKS keystore as an input.
-     *
-     * @param filepath         - the path to the JKS keystore.
-     * @param keystorePassword - the keystore's password.
-     * @return {@link TrustManager} array, that will be used to initiate the {@link SSLContext}.
-     * @throws Exception
-     */
     public static TrustManager[] createTrustManagers(String filepath, String keystorePassword) throws Exception {
         KeyStore trustStore = KeyStore.getInstance("JKS");
         InputStream trustStoreIS = new FileInputStream(filepath);
