@@ -1,19 +1,17 @@
 package tasks.protocol;
 
-import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.chord.LookupMessage;
 import messages.chord.LookupReplyMessage;
+import peer.Peer;
 import tasks.Task;
 
-import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 
 public class LookupTask extends Task {
-    public LookupTask(LookupMessage message, ChordNode node, SocketChannel channel, SSLEngine engine) {
-        super(message, node, channel, engine);
+    public LookupTask(LookupMessage message, Peer peer, SSLSocket socket) {
+        super(message, peer, socket);
     }
 
     @Override
@@ -23,12 +21,12 @@ public class LookupTask extends Task {
         //System.out.println("LookupTask searching for successor of " + requestedId);
 
         //send find successor after receiving guid
-        ChordNodeReference reference = node.findSuccessor(requestedId);
+        ChordNodeReference sucessor = peer.findSuccessor(requestedId);
 
-        LookupReplyMessage response = new LookupReplyMessage(node.getSelfReference(), reference.toString().getBytes(StandardCharsets.UTF_8));
+        LookupReplyMessage response = new LookupReplyMessage(peer.getSelfReference(), sucessor);
 
         try {
-            node.write(channel, engine, response.encode());
+            peer.sendMessage(socket, response);
             //System.out.println("Server sent: " + response);
         } catch (IOException e) {
             System.err.println("[ERROR-CHORD] Couldn't send LOOKUP");

@@ -1,21 +1,19 @@
 package tasks.protocol;
 
-import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.chord.GuidMessage;
 import messages.chord.JoinMessage;
+import peer.Peer;
 import tasks.Task;
 import utils.Utils;
 
-import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 
 public class JoinTask extends Task {
-    public JoinTask(JoinMessage message, ChordNode node, SocketChannel channel, SSLEngine engine) {
-        super(message, node, channel, engine);
+    public JoinTask(JoinMessage message, Peer peer, SSLSocket socket) {
+        super(message, peer, socket);
     }
 
     @Override
@@ -25,22 +23,22 @@ public class JoinTask extends Task {
         int guidToSend = Utils.generateId(socketAddress);
 
         //finds successor of new id
-        ChordNodeReference successor = this.node.findSuccessor(guidToSend);
+        ChordNodeReference successor = this.peer.findSuccessor(guidToSend);
 
         while (successor.getGuid() == guidToSend) {
             System.out.println("oops... " + guidToSend + " already exists");
             guidToSend = (guidToSend + 1) % (2 ^ Utils.CHORD_M);
-            successor = this.node.findSuccessor(guidToSend);
+            successor = this.peer.findSuccessor(guidToSend);
         }
 
         //updates boot peer successor
-        if (this.node.between(guidToSend, this.node.getSelfReference().getGuid(), this.node.getSuccessor().getGuid(), false))
-            this.node.setSuccessor(new ChordNodeReference(socketAddress, guidToSend));
+        if (this.peer.between(guidToSend, this.peer.getSelfReference().getGuid(), this.peer.getSuccessor().getGuid(), false))
+            this.peer.setSuccessor(new ChordNodeReference(socketAddress, guidToSend));
 
-        GuidMessage response = new GuidMessage(node.getSelfReference(), (guidToSend + " " + successor).getBytes(StandardCharsets.UTF_8));
+        GuidMessage response = new GuidMessage(peer.getSelfReference(), guidToSend, successor);
 
         try {
-            node.write(channel, engine, response.encode());
+            peer.sendMessage(socket, response);
             //System.out.println("Server sent: " + response);
         } catch (IOException e) {
             System.err.println("[ERROR-CHORD] Couldn't send GUID");

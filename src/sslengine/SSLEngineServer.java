@@ -1,62 +1,26 @@
 package sslengine;
 
-import chord.ChordNode;
-import messages.Message;
-import messages.protocol.BackupMessage;
-import utils.Utils;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-/**
- * An SSL/TLS server, that will listen to a specific address and port and serve SSL/TLS connections
- * compatible with the protocol it applies.
- * <p/>
- * After initialization {@link SSLEngineServer#start()} should be called so the server starts to listen to
- * new connection requests. At this point, start is blocking, so, in order to be able to gracefully stop
- * the server, a {@link Runnable} containing a server object should be created. This runnable should
- * start the server in its run method and also provide a stop method, which will call {@link SSLEngineServer#stop()}.
- * </p>
- * NioSslServer makes use of Java NIO, and specifically listens to new connection requests with a {@link ServerSocketChannel}, which will
- * create new {@link SocketChannel}s and a {@link Selector} which serves all the connections in one thread.
- */
 public class SSLEngineServer extends SSLEngineComms {
-
-    /**
-     * Declares if the server is active to serve and create new connections.
-     */
     private boolean active;
-
-    /**
-     * The context will be initialized with a specific SSL/TLS protocol and will then be used
-     * to create {@link SSLEngine} classes for each new connection that arrives to the server.
-     */
     private final SSLContext context;
-
-    /**
-     * A part of Java NIO that will be used to serve all connections to the server in one thread.
-     */
     private final Selector selector;
-
     private final SocketAddress socketAddress;
-
     private final ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
-    /**
-     * Server is designed to apply an SSL/TLS protocol and listen to an IP address and port.
-     *
-     * @param socketAddress - the address this server will listen to.
-     * @throws Exception
-     */
     public SSLEngineServer(SSLContext context, InetSocketAddress socketAddress) throws Exception {
         this.context = context;
 
@@ -70,14 +34,6 @@ public class SSLEngineServer extends SSLEngineComms {
         active = true;
     }
 
-    /**
-     * Should be called in order the server to start listening to new connections.
-     * This method will run in a loop as long as the server is active. In order to stop the server
-     * you should use {@link SSLEngineServer#stop()} which will set it to inactive state
-     * and also wake up the listener, which may be in blocking select() state.
-     *
-     * @throws Exception
-     */
     public void start() {
         System.out.println("Initialized and waiting for new connections...");
 
@@ -112,11 +68,11 @@ public class SSLEngineServer extends SSLEngineComms {
                         // data is null if error or end of connection
                         if (data != null) {
                             try {
-                                Message request = Message.create(data);
+                                /*Message request = Message.create(data);
                                 //System.out.println("Server received: " + request);
-                                if(request instanceof BackupMessage)
+                                if (request instanceof BackupMessage)
                                     key.cancel();
-                                this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));
+                                this.scheduler.submit(request.getTask(((ChordNode) this), channel, engine));*/
                             } catch (Exception e) {
                                 System.out.println("Couldn't parse request message");
                                 e.printStackTrace();
@@ -132,10 +88,6 @@ public class SSLEngineServer extends SSLEngineComms {
         //System.out.println("Goodbye from Server!");
     }
 
-    /**
-     * Sets the server to an inactive state, in order to exit the reading loop in {@link SSLEngineServer#start()}
-     * and also wakes up the selector, which may be in select() blocking state.
-     */
     public void stop() {
         active = false;
         executor.shutdown();
@@ -144,14 +96,6 @@ public class SSLEngineServer extends SSLEngineComms {
         System.out.println("[SSLServer] Server shutdown successfully");
     }
 
-    /**
-     * Will be called after a new connection request arrives to the server. Creates the {@link SocketChannel} that will
-     * be used as the network layer link, and the {@link SSLEngine} that will encrypt and decrypt all the data
-     * that will be exchanged during the session with this specific client.
-     *
-     * @param key - the key dedicated to the {@link ServerSocketChannel} used by the server to listen to new connection requests.
-     * @throws Exception
-     */
     private void accept(SelectionKey key) throws Exception {
         //System.out.println("New connection request!");
 
@@ -184,35 +128,6 @@ public class SSLEngineServer extends SSLEngineComms {
         } catch (IOException e) {
             System.err.println("Couldn't close connection in Server");
             e.printStackTrace();
-        }
-    }
-
-    public void sendFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel) {
-        try {
-            super.sendFile(socketChannel, engine, fileChannel);
-        } catch (IOException e) {
-            System.err.println("Error sending file: " + e.getMessage());
-        }
-    }
-
-    public void receiveFile(SocketChannel socketChannel, SSLEngine engine, FileChannel fileChannel, long size) {
-        peerNetData = ByteBuffer.allocate(Utils.TLS_CHUNK_SIZE);
-        try {
-            final long started = System.currentTimeMillis();
-
-            long total = 0;
-            peerAppData = ByteBuffer.allocate(Utils.CHUNK_SIZE);
-            while (true) {
-                long bytes;
-                bytes = super.receiveFile(socketChannel, engine, fileChannel);
-                total += bytes;
-
-                if (bytes < 0 || total == size) {
-                    return;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error sending file: " + e.getMessage());
         }
     }
 

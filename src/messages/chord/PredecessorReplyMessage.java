@@ -1,49 +1,23 @@
 package messages.chord;
 
-import chord.ChordNode;
 import chord.ChordNodeReference;
+import messages.Message;
+import peer.Peer;
 import tasks.Task;
 
-import javax.net.ssl.SSLEngine;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
+import javax.net.ssl.SSLSocket;
 
 //CHORD PREDECESSORREPLY <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <PRED. GUID> <PRED. IP> <PRED. PORT>
-public class PredecessorReplyMessage extends ChordMessage {
-    private ChordNodeReference predecessor = null;
+public class PredecessorReplyMessage extends Message {
+    private final ChordNodeReference predecessor;
 
-    public PredecessorReplyMessage(ChordNodeReference senderReference, byte[] body) {
-        super("PREDECESSORREPLY", senderReference, body);
-        if (body.length != 0)
-            this.predecessor = new ChordNodeReference(body);
+    public PredecessorReplyMessage(ChordNodeReference senderReference, ChordNodeReference predecessor) {
+        super("PREDECESSORREPLY", senderReference);
+        this.predecessor = predecessor;
     }
 
     @Override
-    public byte[] encode() {
-        // Create Header in the specified format
-        byte[] header = String.format("%s %s %d %s %d \r\n\r\n",
-                "CHORD",
-                this.action,
-                this.getSenderGuid(),
-                this.getSenderHostAddress(),
-                this.getSenderPort()).getBytes(StandardCharsets.UTF_8);
-
-        if (body.length == 0) {
-            return header;
-        }
-
-        // Create Message array
-        byte[] message = new byte[header.length + this.body.length];
-
-        // Copy Header and Body to Message array
-        System.arraycopy(header, 0, message, 0, header.length);
-        System.arraycopy(this.body, 0, message, header.length, body.length);
-
-        return message;
-    }
-
-    @Override
-    public Task getTask(ChordNode node, SocketChannel channel, SSLEngine engine) {
+    public Task getTask(Peer peer, SSLSocket socket) {
         return null;
     }
 

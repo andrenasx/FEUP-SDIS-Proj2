@@ -1,8 +1,10 @@
 package chord;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
-public class ChordNodeReference {
+public class ChordNodeReference implements Serializable {
     private int guid;
     private InetSocketAddress address;
 
@@ -32,6 +34,13 @@ public class ChordNodeReference {
         this.guid = guid;
     }
 
+    public String liteString() {
+        return "{" +
+                "guid=" + guid +
+                ", address=" + address +
+                '}';
+    }
+
     @Override
     public String toString() {
         return "ChordNodeReference{" +
@@ -42,10 +51,14 @@ public class ChordNodeReference {
 
     @Override
     public boolean equals(Object o) {
-        if(getClass() != o.getClass()) return false;
+        if (getClass() != o.getClass()) return false;
 
         ChordNodeReference obj = (ChordNodeReference) o;
         return obj.guid == this.guid;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(guid, address);
+    }
 }

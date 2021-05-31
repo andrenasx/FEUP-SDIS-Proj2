@@ -1,24 +1,28 @@
 package tasks.protocol;
 
-import chord.ChordNode;
 import messages.chord.NotifyMessage;
+import peer.Peer;
 import tasks.Task;
 
-import javax.net.ssl.SSLEngine;
-import java.nio.channels.SocketChannel;
+import javax.net.ssl.SSLSocket;
+import java.io.IOException;
 
 public class NotifyTask extends Task {
-    public NotifyTask(NotifyMessage message, ChordNode node, SocketChannel channel, SSLEngine engine) {
-        super(message, node, channel, engine);
+    public NotifyTask(NotifyMessage message, Peer peer, SSLSocket socket) {
+        super(message, peer, socket);
     }
 
     @Override
     public void run() {
-        if (this.node.getPredecessor() == null || this.node.between(this.message.getSenderGuid(), this.node.getPredecessor().getGuid(), this.node.getSelfReference().getGuid(), false)) {
-            //System.out.println("SETTING PREDECESSOR " + this.message.getSenderGuid() + " FOR NODE " + this.node.getSelfReference().getGuid());
-            this.node.setPredecessor(this.message.getSenderNodeReference());
+        if (this.peer.getPredecessor() == null || this.peer.between(this.message.getSenderGuid(), this.peer.getPredecessor().getGuid(), this.peer.getSelfReference().getGuid(), false)) {
+            //System.out.println("SETTING PREDECESSOR " + this.message.getSenderGuid() + " FOR peer " + this.peer.getSelfReference().getGuid());
+            this.peer.setPredecessor(this.message.getSenderNodeReference());
         }
 
-        this.node.closeConnectionServer(channel, engine);
+        try {
+            this.peer.closeClient(socket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

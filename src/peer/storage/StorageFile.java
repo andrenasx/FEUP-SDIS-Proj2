@@ -2,19 +2,22 @@ package peer.storage;
 
 import chord.ChordNodeReference;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StorageFile {
+public class StorageFile implements Serializable {
+    private final int key;
     private ChordNodeReference owner;
     private String fileId;
     private String filename;
     private long size;
     private int replicationDegree;
-    private Set<ChordNodeReference> storingNodes = ConcurrentHashMap.newKeySet();
+    private Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
 
-    public StorageFile(ChordNodeReference owner, String fileId, String filename, long size, int replicationDegree) {
+    public StorageFile(int key, ChordNodeReference owner, String fileId, String filename, long size, int replicationDegree) {
+        this.key = key;
         this.fileId = fileId;
         this.owner = owner;
         this.filename = filename;
@@ -22,16 +25,20 @@ public class StorageFile {
         this.replicationDegree = replicationDegree;
     }
 
-    public void addStoringNodes(List<ChordNodeReference> nodes) {
-        this.storingNodes.addAll(nodes);
+    public int getKey() {
+        return this.key;
     }
 
-    public synchronized void addStoringNode(ChordNodeReference node) {
-        this.storingNodes.add(node);
+    public void addStoringKeys(List<Integer> keys) {
+        this.storingKeys.addAll(keys);
     }
 
-    public Set<ChordNodeReference> getStoringNodes() {
-        return this.storingNodes;
+    public synchronized void addStoringKey(int key) {
+        this.storingKeys.add(key);
+    }
+
+    public Set<Integer> getStoringKeys() {
+        return this.storingKeys;
     }
 
     public ChordNodeReference getOwner() {
@@ -74,10 +81,20 @@ public class StorageFile {
         this.replicationDegree = replicationDegree;
     }
 
+
+    public String liteString() {
+        return "{filename= " + filename +
+                ", fileId= " + fileId +
+                ", owner=" + owner.liteString() +
+                ", size=" + size + " B" +
+                ", replicationDegree=" + replicationDegree + "}";
+    }
+
+
     @Override
     public String toString() {
         return "StorageFile{" +
-                ", fileId='" + fileId +
+                "fileId= " + fileId +
                 ", filename= " + filename +
                 ", owner=" + owner +
                 ", size=" + size +

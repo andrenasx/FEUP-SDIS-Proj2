@@ -1,6 +1,5 @@
 package peer.storage;
 
-import chord.ChordNodeReference;
 import peer.Peer;
 
 import java.io.*;
@@ -31,9 +30,9 @@ public class PeerStorage implements Serializable {
     }
 
     public static PeerStorage loadState(Peer peer) {
-        /*PeerStorage storage = null;
+        PeerStorage storage = null;
         try {
-            FileInputStream fileIn = new FileInputStream("../../PeerStorage/Peer" + peer.getId() + "/_state");
+            FileInputStream fileIn = new FileInputStream("../PeerStorage/Peer" + peer.getSelfReference().getGuid() + "/_state");
             ObjectInputStream in = new ObjectInputStream(fileIn);
             storage = (PeerStorage) in.readObject();
             in.close();
@@ -43,14 +42,14 @@ public class PeerStorage implements Serializable {
         }
 
         if (storage == null) {
-            storage = new PeerStorage(peer.getId());
+            storage = new PeerStorage(peer.getSelfReference().getGuid());
         }
         else {
             System.out.println("[STORAGE] Loaded Peer storage state from file successfully");
         }
 
-        return storage;*/
-        return null;
+        return storage;
+
     }
 
     public void saveState() {
@@ -74,9 +73,9 @@ public class PeerStorage implements Serializable {
     }
 
     public void addSentFile(StorageFile storageFile) {
-        if(this.sentFiles.containsKey(storageFile.getFileId())){
-            for(ChordNodeReference node : this.sentFiles.get(storageFile.getFileId()).getStoringNodes()){
-                storageFile.addStoringNode(node);
+        if (this.sentFiles.containsKey(storageFile.getFileId())) {
+            for (Integer key : this.sentFiles.get(storageFile.getFileId()).getStoringKeys()) {
+                storageFile.addStoringKey(key);
             }
         }
         this.sentFiles.put(storageFile.getFileId(), storageFile);
@@ -113,12 +112,15 @@ public class PeerStorage implements Serializable {
         sb.append("---Stored Files---\n");
         for (StorageFile storageFile : this.storedFiles.values()) {
             sb.append(storageFile).append("\n");
+            sb.append(storageFile.liteString()).append("\n");
         }
 
         sb.append("---Sent Files---\n");
         for (StorageFile storageFile : this.sentFiles.values()) {
             sb.append(storageFile).append("\n");
+            sb.append(storageFile.liteString()).append("\n");
         }
+
 
         sb.append("\n---Storage---\n")
                 .append("Maximum capacity: ").append(this.storageCapacity / 1000.0).append(" KBytes\n")
