@@ -217,12 +217,11 @@ public class Peer extends ChordNode implements PeerInit {
 
     @Override
     public void delete(String filepath) throws RemoteException {
-
         //verify if file exists in sent files
         StorageFile storageFile = this.getNodeStorage().getSentFile(filepath);
 
         if (storageFile == null) {
-            System.err.println("[DELETE-ERROR] Did not delete " + filepath);
+            System.err.println("[DELETE-ERROR] Did not backup " + filepath);
             return;
         }
 
@@ -242,7 +241,6 @@ public class Peer extends ChordNode implements PeerInit {
             DeleteMessage deleteMessage = new DeleteMessage(this.getSelfReference(), storageFile.getFileId());
             deletes.add(this.scheduler.submit(() -> this.deleteFile(deleteMessage, guid, filepath, storageFile)));
         }
-
 
         try {
             StringBuilder sdeletes = new StringBuilder("[DELETE] Result for " + filepath + "\n");

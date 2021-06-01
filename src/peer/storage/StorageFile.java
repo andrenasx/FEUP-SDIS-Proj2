@@ -38,11 +38,7 @@ public class StorageFile implements Serializable {
     }
 
     public synchronized void removeStoringKey(int key) {
-        if (this.storingKeys.remove(key)) {
-            System.out.println("REMOVED FROM STORED FILE" + key);
-        } else {
-            System.out.println("FAILED REMOVING" + key);
-        }
+        this.storingKeys.remove(key);
     }
 
     public Set<Integer> getStoringKeys() {
@@ -95,7 +91,9 @@ public class StorageFile implements Serializable {
                 ", fileId=" + fileId +
                 ", owner=" + owner.liteString() +
                 ", size=" + size + " B" +
-                ", replicationDegree=" + replicationDegree + "}";
+                ", replicationDegree=" + replicationDegree +
+                ", storingKeys=" +
+                "}";
     }
 
 

@@ -5,11 +5,10 @@ import peer.Peer;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NodeStorage implements Serializable {
+    private int id;
     private double storageCapacity;
     private double occupiedSpace;
     private final ConcurrentHashMap<String, StorageFile> sentFiles; // <FileName, StorageFile>
@@ -17,6 +16,7 @@ public class NodeStorage implements Serializable {
     private final String storagePath;
 
     public NodeStorage(int id) {
+        this.id = id;
         this.storageCapacity = 100000000; // 100 MBytes
         this.occupiedSpace = 0;
         this.sentFiles = new ConcurrentHashMap<>();
@@ -46,8 +46,7 @@ public class NodeStorage implements Serializable {
         if (storage == null) {
             storage = new NodeStorage(id);
             System.out.println("[STORAGE] Created new storage");
-        }
-        else {
+        } else {
             System.out.println("[STORAGE] Loaded Peer storage state from file successfully");
         }
 
@@ -98,6 +97,14 @@ public class NodeStorage implements Serializable {
         return this.storedFiles;
     }
 
+    public void removeSentFile(String filename) {
+        this.sentFiles.remove(filename);
+    }
+
+    public void removeStoredFile(String fileId) {
+        this.storedFiles.remove(fileId);
+    }
+
     public synchronized void occupySpace(double space) {
         this.occupiedSpace += space;
     }
@@ -123,14 +130,11 @@ public class NodeStorage implements Serializable {
     }
 
     public byte[] restoreFileData(String fileId) throws IOException {
-        File file = new File(this.storagePath + fileId);
-        return Files.readAllBytes(file.toPath());
+        return Files.readAllBytes(Paths.get(this.storagePath + fileId));
     }
 
     public void deleteStoredFile(String fileId) throws IOException {
-        System.out.println("DELETE STORED FILE" + fileId);
         Files.deleteIfExists(Paths.get(this.getStoragePath() + fileId));
-        System.out.println("before remove stored file");
         this.removeStoredFile(fileId);
     }
 
