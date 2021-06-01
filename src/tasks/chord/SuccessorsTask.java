@@ -17,19 +17,7 @@ public class SuccessorsTask extends Task {
 
     @Override
     public void run() {
-        //Create set from array elements
-        LinkedHashSet<ChordNodeReference> linkedHashSet = new LinkedHashSet<>(Arrays.asList(peer.getRoutingTable()));
-        //Get back the array without duplicates
-        ChordNodeReference[] successors = linkedHashSet.toArray(new ChordNodeReference[] {});
-
-        ChordNodeReference[] toSend = null;
-
-        if(successors.length > 2)
-            toSend = Arrays.copyOfRange(successors, 0, 3);
-        else
-            toSend = Arrays.copyOfRange(successors, 0, successors.length);
-
-        SuccessorsReplyMessage response = new SuccessorsReplyMessage(peer.getSelfReference(), toSend);
+        SuccessorsReplyMessage response = new SuccessorsReplyMessage(peer.getSelfReference(), Arrays.copyOfRange(peer.getSuccessorsList(), 0, 2));
 
         try {
             this.peer.sendMessage(socket, response);
