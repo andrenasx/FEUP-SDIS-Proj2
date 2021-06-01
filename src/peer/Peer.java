@@ -217,6 +217,46 @@ public class Peer extends ChordNode implements PeerInit {
     @Override
     public void delete(String filepath) throws RemoteException {
 
+        //verify if file exists in sent files
+        StorageFile storageFile = this.getNodeStorage().getSentFile(filepath);
+
+        if (storageFile == null) {
+            System.err.println("[DELETE-ERROR] Did not delete " + filepath);
+            return;
+        }
+
+        Set<Integer> storingKeys = storageFile.getStoringKeys();
+
+        List<ChordNodeReference> guids = new ArrayList<>();
+
+        for (int key : storingKeys) {
+            //System.out.println("Searching successor for: " + guid);
+            ChordNodeReference peer = this.findSuccessor(key);
+            guids.add(peer);
+        }
+
+
+        List<Future<String>> deletes = new ArrayList<>();
+        for (ChordNodeReference guid : guids) {
+            DeleteMessage deleteMessage = new DeleteMessage(this.getSelfReference(), storageFile.getFileId());
+            deletes.add(this.scheduler.submit(() -> this.deleteFile(deleteMessage, guid, filepath, storageFile)));
+        }
+
+
+        try {
+            StringBuilder sbackups = new StringBuilder("[DELETE] Result for " + filepath + "\n");
+            // Wait for backups to finish and print result
+            for (Future<String> delete : deletes) {
+                sbackups.append(delete.get()).append("\n");
+            }
+            System.out.println(sbackups);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+
+
     }
 
     @Override
@@ -283,5 +323,27 @@ public class Peer extends ChordNode implements PeerInit {
         }
 
         return false;
+    }
+
+
+    public String deleteFile(DeleteMessage message, ChordNodeReference storingPeer, String filePath, StorageFile storageFile){
+        try {
+            Message response = this.sendAndReceiveMessage(storingPeer.getSocketAddress(), message);
+
+            if (response instanceof OkMessage) {
+                //storageFile.addStoringKey(message.getStorageFile().getKey());
+                return "[DELETE] Successful delete file " + filePath + " for peer " + storingPeer.getGuid();
+            }
+            else if (response instanceof ErrorMessage) {
+                return "[ERROR-DELETE] Peer " + storingPeer.getGuid() + " failed to delete file";
+            }
+            else {
+                return "[ERROR-DELETE] Received unexpected reply from Peer " + storingPeer.getGuid();
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR-DELETE] Couldn't delete file " + filePath);
+            e.printStackTrace();
+            return "[ERROR-DELETE] Failed delete on file " + filePath + " on peer " + storingPeer.getGuid();
+        }
     }
 }

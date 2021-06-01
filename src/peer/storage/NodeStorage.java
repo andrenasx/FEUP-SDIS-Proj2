@@ -125,6 +125,12 @@ public class NodeStorage implements Serializable {
         return Files.readAllBytes(file.toPath());
     }
 
+    public void deleteFile(Peer peer, String fileId){
+        StorageFile storageFile = this.storedFiles.get(fileId);
+        File file = new File("../PeerStorage/Peer" + peer.getSelfReference().getGuid()+ "/" + storageFile.getFileId());
+        file.delete();
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
