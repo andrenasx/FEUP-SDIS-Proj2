@@ -4,7 +4,6 @@ import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.Message;
 import messages.protocol.*;
-import peer.storage.PeerStorage;
 import peer.storage.StorageFile;
 import utils.Utils;
 
@@ -23,7 +22,6 @@ import java.util.concurrent.*;
 
 public class Peer extends ChordNode implements PeerInit {
     private final String serviceAccessPoint;
-    private PeerStorage peerStorage;
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
     public Peer(String serviceAccessPoint, InetSocketAddress socketAddress, InetSocketAddress bootScoketAddress, boolean boot) throws Exception {
@@ -87,14 +85,10 @@ public class Peer extends ChordNode implements PeerInit {
             return;
         }
 
-        //creates storage
-        this.peerStorage = PeerStorage.loadState(this);
-
         //starts periodic stabilization
         this.startPeriodicStabilize();
 
-
-        this.scheduler.scheduleAtFixedRate(new Thread(this.peerStorage::saveState), 1, 1, TimeUnit.MINUTES);
+        this.scheduler.scheduleAtFixedRate(new Thread(this.getNodeStorage()::saveState), 1, 1, TimeUnit.MINUTES);
         System.out.println("[PEER] Peer inited successfully");
     }
 
@@ -158,7 +152,7 @@ public class Peer extends ChordNode implements PeerInit {
         //BackupMessage bm = new BackupMessage(this.getSelfReference(), storageFile);
 
 
-        this.peerStorage.addSentFile(storageFile);
+        this.getNodeStorage().addSentFile(storageFile);
 
         byte[] fileData = new byte[0];
         try {
@@ -189,20 +183,30 @@ public class Peer extends ChordNode implements PeerInit {
     public void restore(String filepath) throws RemoteException {
         System.out.println("[PEER] Starting restore for " + filepath);
 
-        StorageFile storageFile = this.peerStorage.getSentFile(filepath);
+        StorageFile storageFile = this.getNodeStorage().getSentFile(filepath);
 
         if (storageFile == null) {
             System.err.println("[RESTORE-ERROR] Did not backup " + filepath);
             return;
         }
 
-        RestoreMessage rm = new RestoreMessage(this.getSelfReference(), storageFile.getFileId());
+        GetFileMessage rm = new GetFileMessage(this.getSelfReference(), storageFile.getFileId());
         for (Integer key : storageFile.getStoringKeys()) {
             ChordNodeReference node = this.findSuccessor(key);
 
             System.out.println("Restoring from " + node);
-            if (this.restoreFile(rm, node, filepath)) {
-                System.out.println("Successfull restore on file " + filepath);
+
+            File file = new File(filepath);
+            String restoreFilePath = file.getParent() + "/restored_" + file.getName();
+            try {
+                Files.createDirectories(Paths.get(file.getParent()));
+            } catch (IOException e) {
+                e.printStackTrace();
+                continue;
+            }
+
+            if (this.restoreFile(rm, node, restoreFilePath)) {
+                System.out.println("[RESTORE] Successfull restore on file " + filepath);
                 return;
             }
         }
@@ -222,8 +226,7 @@ public class Peer extends ChordNode implements PeerInit {
 
     @Override
     public String state() throws RemoteException {
-        return "\nChord State\n" + this.chordState() + "\nSTORAGE\n" + this.peerStorage;
-
+        return "\nChord State\n" + this.chordState() + "\nSTORAGE\n" + this.getNodeStorage();
     }
 
     // TODO File not needed
@@ -257,19 +260,15 @@ public class Peer extends ChordNode implements PeerInit {
         }
     }
 
-    public boolean restoreFile(RestoreMessage message, ChordNodeReference storingPeer, String filePath) {
+    public boolean restoreFile(GetFileMessage message, ChordNodeReference storingPeer, String restoreFilePath) {
         try {
             Message response = this.sendAndReceiveMessage(storingPeer.getSocketAddress(), message);
 
             if (response instanceof FileMessage) {
                 System.out.println("Restoring file...");
-                File file = new File(filePath);
-                String restoredFilePath = file.getParent() + "/restored_" + file.getName();
-                Files.createDirectories(Paths.get(file.getParent()));
 
-                Files.write(Paths.get(restoredFilePath), ((FileMessage) response).getFileData());
+                Files.write(Paths.get(restoreFilePath), ((FileMessage) response).getFileData());
 
-                System.out.println("[RESTORE] Successful restore on file " + filePath);
                 return true;
             }
             else if (response instanceof ErrorMessage) {
@@ -279,14 +278,10 @@ public class Peer extends ChordNode implements PeerInit {
                 System.out.println("[ERROR-RESTORE] Received unexpected reply from Peer " + storingPeer.getGuid());
             }
         } catch (Exception e) {
-            System.err.println("[ERROR-RESTORE] Couldn't restore file " + filePath);
+            System.err.println("[ERROR-RESTORE] Couldn't restore file");
             e.printStackTrace();
         }
 
         return false;
-    }
-
-    public PeerStorage getPeerStorage() {
-        return peerStorage;
     }
 }

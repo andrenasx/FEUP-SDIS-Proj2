@@ -25,7 +25,7 @@ public class PeerStorage implements Serializable {
         this.sentChunks = new ConcurrentHashMap<>();
         this.storageFileMap = new ConcurrentHashMap<>();
         this.deletedFilesMap = new ConcurrentHashMap<>();
-        this.storagePath = "../../PeerStorage/Peer" + id + "/";
+        this.storagePath = "../../NodeStorage/Peer" + id + "/";
 
         // Create peer storage folder
         try {
@@ -38,7 +38,7 @@ public class PeerStorage implements Serializable {
     public static PeerStorage loadState(Peer peer) {
         PeerStorage storage = null;
         try {
-            FileInputStream fileIn = new FileInputStream("../../PeerStorage/Peer" + peer.getId() + "/_state");
+            FileInputStream fileIn = new FileInputStream("../../NodeStorage/Peer" + peer.getId() + "/_state");
             ObjectInputStream in = new ObjectInputStream(fileIn);
             storage = (PeerStorage) in.readObject();
             in.close();

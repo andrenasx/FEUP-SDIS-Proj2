@@ -32,7 +32,7 @@ public class Peer{
         InetSocketAddress socketAddress = new InetSocketAddress(address, port);
 
         // Create Peer Internal State
-        //this.storage = PeerStorage.loadState(this);
+        //this.storage = NodeStorage.loadState(this);
 
         // Create chord reference table
         join(socketAddress);

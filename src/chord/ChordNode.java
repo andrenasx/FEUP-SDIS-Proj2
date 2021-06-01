@@ -1,13 +1,18 @@
 package chord;
 
 import messages.chord.*;
+import messages.protocol.CopyKeysMessage;
+import messages.protocol.CopyKeysReplyMessage;
+import messages.protocol.FileMessage;
+import messages.protocol.GetFileMessage;
+import peer.Peer;
+import peer.storage.NodeStorage;
+import peer.storage.StorageFile;
 import sslsocket.SSLSocketPeer;
 import utils.Utils;
 
-import javax.net.ssl.SSLSocket;
-import java.io.IOException;
+import java.io.File;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +27,7 @@ public class ChordNode extends SSLSocketPeer {
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
     private ChordNodeReference[] successorsList = new ChordNodeReference[3];
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
+    private NodeStorage nodeStorage;
     private int next = 1;
 
     public ChordNode(InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, boolean boot) throws Exception {
@@ -85,31 +91,57 @@ public class ChordNode extends SSLSocketPeer {
 
             //boot peer will be its successor
             this.setSuccessor(new ChordNodeReference(bootSocketAddress, this.self.getGuid()));
-            this.setSuccessorsList(0,getSuccessor());
+            this.setSuccessorsList(0, getSuccessor());
 
             System.out.println("[CHORD NODE] Boot with guid: " + this.self.getGuid());
+
+            // Load storage
+            this.nodeStorage = NodeStorage.loadState(this.self.getGuid());
             return true;
         }
 
         try {
-            JoinMessage request = new JoinMessage(this.self);
+            JoinMessage joinMessage = new JoinMessage(this.self);
 
             //System.out.println("Client wrote: " + request);
-            GuidMessage response = (GuidMessage) this.sendAndReceiveMessage(bootSocketAddress, request);
+            GuidMessage guidMessage = (GuidMessage) this.sendAndReceiveMessage(bootSocketAddress, joinMessage);
             //System.out.println("Client received: " + response);
 
-            this.self.setGuid(response.getNewGuid());
-            System.out.println("[CHORD] Guid " + response.getNewGuid());
+            this.self.setGuid(guidMessage.getNewGuid());
+            System.out.println("[CHORD] Guid " + guidMessage.getNewGuid());
 
-            this.setSuccessor(response.getSuccessorReference());
-            this.setSuccessorsList(0,getSuccessor());
-
-            return true;
+            this.setSuccessor(guidMessage.getSuccessorReference());
+            this.setSuccessorsList(0, getSuccessor());
         } catch (Exception e) {
             System.out.println("[ERROR-CHORD] Could not join ring");
             e.printStackTrace();
             return false;
         }
+
+        // Load storage
+        this.nodeStorage = NodeStorage.loadState(this.self.getGuid());
+
+        // Reclaim Keys (stored files that should be on this node)
+        try {
+            CopyKeysMessage copyKeysMessage = new CopyKeysMessage(this.self);
+            CopyKeysReplyMessage copyKeysReplyMessage = (CopyKeysReplyMessage) this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), copyKeysMessage);
+
+            for (StorageFile delegatedFile: copyKeysReplyMessage.getDelegatedFiles()) {
+                GetFileMessage getFileMessage = new GetFileMessage(this.getSuccessor(), delegatedFile.getFileId());
+                if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), delegatedFile.getFilePath())) {
+                    System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
+                    return false;
+                }
+
+                this.nodeStorage.addStoredFile(delegatedFile);
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR-CHORD] Could not get delegated files");
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 
     public ChordNodeReference findSuccessor(int guid) {
@@ -122,7 +154,7 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         if (this.between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
-            System.out.println("returned successor");
+            //System.out.println("returned successor");
             return this.getSuccessor();
         }
 
@@ -134,7 +166,7 @@ public class ChordNode extends SSLSocketPeer {
         }*/
 
         ChordNodeReference closest = this.closestPrecedingNode(guid);
-        System.out.println("Closest to " + guid + ": " + closest);
+        //System.out.println("Closest to " + guid + ": " + closest);
 
         try {
             LookupMessage request = new LookupMessage(self, guid);
@@ -153,12 +185,12 @@ public class ChordNode extends SSLSocketPeer {
 
     public void stabilize() {
         System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
-        this.setSuccessorsList(0,getSuccessor());
+        this.setSuccessorsList(0, getSuccessor());
 
         boolean success = false;
         int nextSuccessor = 0;
         while (!success) {
-            try{
+            try {
                 SuccessorsMessage request = new SuccessorsMessage(self);
 
                 //System.out.println("Client wrote: " + request);
@@ -168,11 +200,12 @@ public class ChordNode extends SSLSocketPeer {
                 //System.out.println("SUCCESSORS LIST: " + Arrays.toString(this.successorsList));
                 success = true;
 
-            }catch(Exception e){
+            } catch (Exception e) {
                 System.out.println("Successor down");
-                setSuccessor(this.successorsList[nextSuccessor]);
-                this.setSuccessorsList(0,getSuccessor());
                 nextSuccessor++;
+                if (nextSuccessor == 3) return;
+                setSuccessor(this.successorsList[nextSuccessor]);
+                this.setSuccessorsList(0, getSuccessor());
                 //e.printStackTrace();
             }
         }
@@ -262,14 +295,22 @@ public class ChordNode extends SSLSocketPeer {
         return this.bootPeer;
     }
 
+    public NodeStorage getNodeStorage() {
+        return nodeStorage;
+    }
+
     public String chordState() {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("Node id: ").append(this.self.getGuid()).append("\n");
         stringBuilder.append("\nPredecessor: ").append(this.predecessor).append("\n");
-        stringBuilder.append("\nRouting table:\n");
-        for (int i = 0; i < routingTable.length; i++) {
-            stringBuilder.append(i).append("-").append(routingTable[i]).append("\n");
+        stringBuilder.append("\nRouting Table:\n");
+        for (int i = 0; i < this.routingTable.length; i++) {
+            stringBuilder.append(i).append("-").append(this.routingTable[i]).append("\n");
+        }
+        stringBuilder.append("\nSuccessor Table:\n");
+        for (int i = 0; i < this.successorsList.length; i++) {
+            stringBuilder.append(i).append("-").append(this.successorsList[i]).append("\n");
         }
 
         return stringBuilder.toString();

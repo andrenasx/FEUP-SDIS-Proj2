@@ -27,7 +27,7 @@ public class JoinTask extends Task {
 
         while (successor.getGuid() == guidToSend) {
             System.out.println("oops... " + guidToSend + " already exists");
-            guidToSend = (guidToSend + 1) % (2 ^ Utils.CHORD_M);
+            guidToSend = (guidToSend + 1) % (Utils.CHORD_MAX_PEERS);
             successor = this.peer.findSuccessor(guidToSend);
         }
 

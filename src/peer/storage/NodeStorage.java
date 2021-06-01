@@ -1,20 +1,20 @@
 package peer.storage;
 
-import peer.Peer;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PeerStorage implements Serializable {
+public class NodeStorage implements Serializable {
     private double storageCapacity;
     private double occupiedSpace;
     private final ConcurrentHashMap<String, StorageFile> sentFiles; // <FileName, StorageFile>
     private final ConcurrentHashMap<String, StorageFile> storedFiles; // <FileID, StorageFile>
     private final String storagePath;
 
-    public PeerStorage(int id) {
+    public NodeStorage(int id) {
         this.storageCapacity = 100000000; // 100 MBytes
         this.occupiedSpace = 0;
         this.sentFiles = new ConcurrentHashMap<>();
@@ -29,12 +29,12 @@ public class PeerStorage implements Serializable {
         }
     }
 
-    public static PeerStorage loadState(Peer peer) {
-        PeerStorage storage = null;
+    public static NodeStorage loadState(int id) {
+        NodeStorage storage = null;
         try {
-            FileInputStream fileIn = new FileInputStream("../PeerStorage/Peer" + peer.getSelfReference().getGuid() + "/_state");
+            FileInputStream fileIn = new FileInputStream("../PeerStorage/Peer" + id + "/_state");
             ObjectInputStream in = new ObjectInputStream(fileIn);
-            storage = (PeerStorage) in.readObject();
+            storage = (NodeStorage) in.readObject();
             in.close();
             fileIn.close();
         } catch (Exception e) {
@@ -42,14 +42,14 @@ public class PeerStorage implements Serializable {
         }
 
         if (storage == null) {
-            storage = new PeerStorage(peer.getSelfReference().getGuid());
+            storage = new NodeStorage(id);
+            System.out.println("[STORAGE] Created new storage");
         }
         else {
             System.out.println("[STORAGE] Loaded Peer storage state from file successfully");
         }
 
         return storage;
-
     }
 
     public void saveState() {
@@ -90,6 +90,10 @@ public class PeerStorage implements Serializable {
 
     public StorageFile getStoredFile(String fileId) {
         return this.storedFiles.get(fileId);
+    }
+
+    public ConcurrentHashMap<String, StorageFile> getStoredFiles() {
+        return this.storedFiles;
     }
 
     public synchronized void occupySpace(double space) {

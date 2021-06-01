@@ -19,18 +19,18 @@ public class BackupTask extends Task {
     public void run() {
         BackupMessage backupMessage = (BackupMessage) message;
         try {
-            if (peer.getPeerStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())) {
+            if (peer.getNodeStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())) {
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "HAVEFILE");
                 peer.sendMessage(socket, error);
             }
-            else if (peer.getPeerStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())) {
-                FileOutputStream fos = new FileOutputStream(peer.getPeerStorage().getStoragePath() + backupMessage.getStorageFile().getFileId());
+            else if (peer.getNodeStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())) {
+                FileOutputStream fos = new FileOutputStream(peer.getNodeStorage().getStoragePath() + backupMessage.getStorageFile().getFileId());
                 fos.write(backupMessage.getFileData());
 
                 // Stored message, send Okay
                 OkMessage okay = new OkMessage(peer.getSelfReference());
                 peer.sendMessage(socket, okay);
-                peer.getPeerStorage().addStoredFile(backupMessage.getStorageFile());
+                peer.getNodeStorage().addStoredFile(backupMessage.getStorageFile());
             }
             else {
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "FULL");
