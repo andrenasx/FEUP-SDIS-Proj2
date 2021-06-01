@@ -3,9 +3,7 @@ package peer;
 import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.Message;
-import messages.protocol.BackupMessage;
-import messages.protocol.ErrorMessage;
-import messages.protocol.OkMessage;
+import messages.protocol.*;
 import peer.storage.PeerStorage;
 import peer.storage.StorageFile;
 import utils.Utils;
@@ -14,16 +12,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Peer extends ChordNode implements PeerInit {
     private final String serviceAccessPoint;
@@ -117,71 +113,101 @@ public class Peer extends ChordNode implements PeerInit {
     @Override
     public void backup(String filepath, int replicationDegree) {
         File file = new File(filepath); //"../files/18kb"
-        String filename = file.getName();
         BasicFileAttributes attr;
         String fileId;
         long fileSize;
 
-        System.out.println("[PEER] Starting backup for " + filename);
+        System.out.println("[BACKUP] Starting backup for " + filepath);
 
         try {
             attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-            fileId = Utils.generateHashForFile(filepath, attr);
-            fileSize = attr.size();
+        } catch (IOException e) {
+            System.err.println("[ERROR-BACKUP] Couldn't read file attributes. " + e.getMessage());
+            return;
+        }
+        fileId = Utils.generateHashForFile(filepath, attr);
+        fileSize = attr.size();
 
-            final int[] guids = new Random().ints(0, Utils.CHORD_MAX_PEERS).distinct().limit(replicationDegree * 4L).toArray();
+        final int[] guids = new Random().ints(0, Utils.CHORD_MAX_PEERS).distinct().limit(replicationDegree * 4L).toArray();
 
-            System.out.println("Generated GUIDS: " + Arrays.toString(guids));
+        System.out.println("[BACKUP] Generated GUIDS: " + Arrays.toString(guids));
 
-            Map<ChordNodeReference, Integer> peersToStore = new HashMap<>();
-            for (int guid : guids) {
-                System.out.println("Searching successor for: " + guid);
-                ChordNodeReference peer = this.findSuccessor(guid);
-                if (peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.containsKey(peer)) {
-                    peersToStore.put(peer, guid);
-                    System.out.println("Adding peer to store: " + peer);
-                    if (peersToStore.size() == replicationDegree) break;
-                }
+        Map<ChordNodeReference, Integer> peersToStore = new HashMap<>();
+        for (int guid : guids) {
+            //System.out.println("Searching successor for: " + guid);
+            ChordNodeReference peer = this.findSuccessor(guid);
+            if (peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.containsKey(peer)) {
+                peersToStore.put(peer, guid);
+                //System.out.println("Adding peer to store: " + peer);
+                if (peersToStore.size() == replicationDegree) break;
             }
+        }
 
-            if (peersToStore.size() == 0) {
-                System.out.println("No available peers to backup file.");
-                return;
-            }
+        if (peersToStore.size() == 0) {
+            System.out.println("[ERROR-BACKUP] No available peers to backup file.");
+            return;
+        }
 
-            StringBuilder sb = new StringBuilder("Storing GUIDS: ");
-            for (ChordNodeReference node : peersToStore.keySet()) {
-                sb.append(node.getGuid()).append("; ");
-            }
-            System.out.println(sb);
+        StringBuilder sb = new StringBuilder("[BACKUP] Storing GUIDS: ");
+        for (ChordNodeReference node : peersToStore.keySet()) {
+            sb.append(node.getGuid()).append("; ");
+        }
+        System.out.println(sb);
 
-            StorageFile storageFile = new StorageFile(-1, this.getSelfReference(), fileId, filename, fileSize, replicationDegree);
-            //BackupMessage bm = new BackupMessage(this.getSelfReference(), storageFile);
+        StorageFile storageFile = new StorageFile(-1, this.getSelfReference(), fileId, filepath, fileSize, replicationDegree);
+        //BackupMessage bm = new BackupMessage(this.getSelfReference(), storageFile);
 
 
-            this.peerStorage.addSentFile(storageFile);
+        this.peerStorage.addSentFile(storageFile);
 
-            List<Future<String>> backups = new ArrayList<>();
-            for (Map.Entry<ChordNodeReference, Integer> entry : peersToStore.entrySet()) {
-                BackupMessage bm = new BackupMessage(this.getSelfReference(), new StorageFile(entry.getValue(), this.getSelfReference(), fileId, filename, fileSize, replicationDegree), Files.readAllBytes(file.toPath()));
-                backups.add(this.scheduler.submit(() -> this.backupFile(bm, entry.getKey(), file, storageFile)));
-            }
+        byte[] fileData = new byte[0];
+        try {
+            fileData = Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            System.err.println("[ERROR-BACKUP] Couldn't read " + filepath + " data. " + e.getMessage());
+        }
 
-            StringBuilder sbackups = new StringBuilder("Backup result for " + filename + "\n");
+        List<Future<String>> backups = new ArrayList<>();
+        for (Map.Entry<ChordNodeReference, Integer> entry : peersToStore.entrySet()) {
+            BackupMessage bm = new BackupMessage(this.getSelfReference(), new StorageFile(entry.getValue(), this.getSelfReference(), fileId, filepath, fileSize, replicationDegree), fileData);
+            backups.add(this.scheduler.submit(() -> this.backupFile(bm, entry.getKey(), file, storageFile)));
+        }
+
+        try {
+            StringBuilder sbackups = new StringBuilder("[BACKUP] Result for " + filepath + "\n");
             // Wait for backups to finish and print result
             for (Future<String> backup : backups) {
                 sbackups.append(backup.get()).append("\n");
             }
-
             System.out.println(sbackups);
-        } catch (Exception e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
     @Override
     public void restore(String filepath) throws RemoteException {
+        System.out.println("[PEER] Starting restore for " + filepath);
 
+        StorageFile storageFile = this.peerStorage.getSentFile(filepath);
+
+        if (storageFile == null) {
+            System.err.println("[RESTORE-ERROR] Did not backup " + filepath);
+            return;
+        }
+
+        RestoreMessage rm = new RestoreMessage(this.getSelfReference(), storageFile.getFileId());
+        for (Integer key : storageFile.getStoringKeys()) {
+            ChordNodeReference node = this.findSuccessor(key);
+
+            System.out.println("Restoring from " + node);
+            if (this.restoreFile(rm, node, filepath)) {
+                System.out.println("Successfull restore on file " + filepath);
+                return;
+            }
+        }
+
+        System.err.println("[ERROR-RESTORE] Failed restore on " + filepath);
     }
 
     @Override
@@ -200,15 +226,15 @@ public class Peer extends ChordNode implements PeerInit {
 
     }
 
-
+    // TODO File not needed
     public String backupFile(BackupMessage message, ChordNodeReference storingPeer, File file, StorageFile storageFile) {
-        //System.out.println("[BACKUP] Submited backup on file " + file.getName() + " for peer " + storingPeer.getGuid());
+        //System.out.println("[BACKUP] Submitted backup on file " + file.getName() + " for peer " + storingPeer.getGuid());
         try {
             Message response = this.sendAndReceiveMessage(storingPeer.getSocketAddress(), message);
 
             if (response instanceof OkMessage) {
                 storageFile.addStoringKey(message.getStorageFile().getKey());
-                return "[BACKUP] Successful backup on file " + file.getName();
+                return "[BACKUP] Successful backup on file " + file.getName() + " for peer " + storingPeer.getGuid();
             }
             else if (response instanceof ErrorMessage) {
                 if (((ErrorMessage) response).getError().equals("FULL")) {
@@ -225,10 +251,39 @@ public class Peer extends ChordNode implements PeerInit {
                 return "[ERROR-BACKUP] Received unexpected reply from Peer " + storingPeer.getGuid();
             }
         } catch (Exception e) {
-            System.err.println("Couldn't backup file");
+            System.err.println("[ERROR-BACKUP] Couldn't backup file " + file.getName());
             e.printStackTrace();
-            return "[ERROR-BACKUP] Failed backup on file " + file.getName();
+            return "[ERROR-BACKUP] Failed backup on file " + file.getName() + " on peer " + storingPeer.getGuid();
         }
+    }
+
+    public boolean restoreFile(RestoreMessage message, ChordNodeReference storingPeer, String filePath) {
+        try {
+            Message response = this.sendAndReceiveMessage(storingPeer.getSocketAddress(), message);
+
+            if (response instanceof FileMessage) {
+                System.out.println("Restoring file...");
+                File file = new File(filePath);
+                String restoredFilePath = file.getParent() + "/restored_" + file.getName();
+                Files.createDirectories(Paths.get(file.getParent()));
+
+                Files.write(Paths.get(restoredFilePath), ((FileMessage) response).getFileData());
+
+                System.out.println("[RESTORE] Successful restore on file " + filePath);
+                return true;
+            }
+            else if (response instanceof ErrorMessage) {
+                System.out.println("[ERROR-RESTORE] Received error from Peer " + storingPeer.getGuid());
+            }
+            else {
+                System.out.println("[ERROR-RESTORE] Received unexpected reply from Peer " + storingPeer.getGuid());
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR-RESTORE] Couldn't restore file " + filePath);
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     public PeerStorage getPeerStorage() {

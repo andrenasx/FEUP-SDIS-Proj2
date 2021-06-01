@@ -1,4 +1,4 @@
-package tasks.protocol;
+package tasks.chord;
 
 import chord.ChordNodeReference;
 import messages.chord.PredecessorMessage;

@@ -7,6 +7,7 @@ import utils.Utils;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,7 @@ public class ChordNode extends SSLSocketPeer {
     private ChordNodeReference bootPeer;
     private ChordNodeReference predecessor;
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
+    private ChordNodeReference[] successorsList = new ChordNodeReference[3];
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
     private int next = 1;
 
@@ -36,7 +38,7 @@ public class ChordNode extends SSLSocketPeer {
     protected void startPeriodicStabilize() {
         this.scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
         this.scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
-        //this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -59,6 +61,14 @@ public class ChordNode extends SSLSocketPeer {
         return routingTable[position - 1];
     }
 
+    public synchronized ChordNodeReference[] getSuccessorsList() {
+        return successorsList;
+    }
+
+    public synchronized void setSuccessorsList(int position, ChordNodeReference node) {
+        this.successorsList[position] = node;
+    }
+
     public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
         this.routingTable[position - 1] = reference;
     }
@@ -75,6 +85,8 @@ public class ChordNode extends SSLSocketPeer {
 
             //boot peer will be its successor
             this.setSuccessor(new ChordNodeReference(bootSocketAddress, this.self.getGuid()));
+            this.setSuccessorsList(0,getSuccessor());
+
             System.out.println("[CHORD NODE] Boot with guid: " + this.self.getGuid());
             return true;
         }
@@ -90,6 +102,8 @@ public class ChordNode extends SSLSocketPeer {
             System.out.println("[CHORD] Guid " + response.getNewGuid());
 
             this.setSuccessor(response.getSuccessorReference());
+            this.setSuccessorsList(0,getSuccessor());
+
             return true;
         } catch (Exception e) {
             System.out.println("[ERROR-CHORD] Could not join ring");
@@ -99,7 +113,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public ChordNodeReference findSuccessor(int guid) {
-        System.out.println("\n\n[CHORD] Finding successor...");
+        System.out.println("\n\n[CHORD] Finding successor..." + guid);
         //System.out.println(getSuccessor());
 
         if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
@@ -108,19 +122,19 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         if (this.between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
-            //System.out.println("returned successor");
+            System.out.println("returned successor");
             return this.getSuccessor();
         }
 
         // Return node if we have an entry for it TODO
-        for (int i = Utils.CHORD_M; i >= 1; i--) {
+        /*for (int i = Utils.CHORD_M; i >= 1; i--) {
             ChordNodeReference node = this.getChordNodeReference(i);
             if (node != null && node.getGuid() == guid)
                 return node;
-        }
+        }*/
 
         ChordNodeReference closest = this.closestPrecedingNode(guid);
-        //System.out.println("Closest to " + guid + ": " + closest);
+        System.out.println("Closest to " + guid + ": " + closest);
 
         try {
             LookupMessage request = new LookupMessage(self, guid);
@@ -139,6 +153,29 @@ public class ChordNode extends SSLSocketPeer {
 
     public void stabilize() {
         System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
+        this.setSuccessorsList(0,getSuccessor());
+
+        boolean success = false;
+        int nextSuccessor = 0;
+        while (!success) {
+            try{
+                SuccessorsMessage request = new SuccessorsMessage(self);
+
+                //System.out.println("Client wrote: " + request);
+                SuccessorsReplyMessage response = (SuccessorsReplyMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
+                //System.out.println("Client received: " + response);
+                System.arraycopy(response.getSuccessors(), 0, this.successorsList, 1, 2);
+                //System.out.println("SUCCESSORS LIST: " + Arrays.toString(this.successorsList));
+                success = true;
+
+            }catch(Exception e){
+                System.out.println("Successor down");
+                setSuccessor(this.successorsList[nextSuccessor]);
+                this.setSuccessorsList(0,getSuccessor());
+                nextSuccessor++;
+                //e.printStackTrace();
+            }
+        }
 
         try {
             PredecessorMessage request = new PredecessorMessage(self);
@@ -193,9 +230,8 @@ public class ChordNode extends SSLSocketPeer {
             System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
 
             try {
-                SSLSocket clientSocket = this.createClient(this.predecessor.getSocketAddress());
-                this.closeClient(clientSocket);
-            } catch (IOException e) {
+                this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);
+            } catch (Exception e) {
                 System.err.println("Couldn't connect to predecessor");
                 this.predecessor = null;
             }

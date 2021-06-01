@@ -11,16 +11,16 @@ public class StorageFile implements Serializable {
     private final int key;
     private ChordNodeReference owner;
     private String fileId;
-    private String filename;
+    private String filePath;
     private long size;
     private int replicationDegree;
     private Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
 
-    public StorageFile(int key, ChordNodeReference owner, String fileId, String filename, long size, int replicationDegree) {
+    public StorageFile(int key, ChordNodeReference owner, String fileId, String filePath, long size, int replicationDegree) {
         this.key = key;
         this.fileId = fileId;
         this.owner = owner;
-        this.filename = filename;
+        this.filePath = filePath;
         this.size = size;
         this.replicationDegree = replicationDegree;
     }
@@ -57,12 +57,12 @@ public class StorageFile implements Serializable {
         this.fileId = fileId;
     }
 
-    public String getFilename() {
-        return filename;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setFilename(String filename) {
-        this.filename = filename;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     public long getSize() {
@@ -83,7 +83,7 @@ public class StorageFile implements Serializable {
 
 
     public String liteString() {
-        return "{filename= " + filename +
+        return "{filename= " + filePath +
                 ", fileId= " + fileId +
                 ", owner=" + owner.liteString() +
                 ", size=" + size + " B" +
@@ -95,7 +95,7 @@ public class StorageFile implements Serializable {
     public String toString() {
         return "StorageFile{" +
                 "fileId= " + fileId +
-                ", filename= " + filename +
+                ", filename= " + filePath +
                 ", owner=" + owner +
                 ", size=" + size +
                 ", replicationDegree=" + replicationDegree +

@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PeerStorage implements Serializable {
     private double storageCapacity;
     private double occupiedSpace;
-    private final ConcurrentHashMap<String, StorageFile> sentFiles;
-    private final ConcurrentHashMap<String, StorageFile> storedFiles;
+    private final ConcurrentHashMap<String, StorageFile> sentFiles; // <FileName, StorageFile>
+    private final ConcurrentHashMap<String, StorageFile> storedFiles; // <FileID, StorageFile>
     private final String storagePath;
 
     public PeerStorage(int id) {
@@ -66,7 +66,7 @@ public class PeerStorage implements Serializable {
         }
     }
 
-    public boolean hasStoredFile(String fileId){
+    public boolean hasStoredFile(String fileId) {
         return this.storedFiles.containsKey(fileId);
     }
 
@@ -81,7 +81,15 @@ public class PeerStorage implements Serializable {
                 storageFile.addStoringKey(key);
             }
         }
-        this.sentFiles.put(storageFile.getFileId(), storageFile);
+        this.sentFiles.put(storageFile.getFilePath(), storageFile);
+    }
+
+    public StorageFile getSentFile(String filename) {
+        return this.sentFiles.get(filename);
+    }
+
+    public StorageFile getStoredFile(String fileId) {
+        return this.storedFiles.get(fileId);
     }
 
     public synchronized void occupySpace(double space) {
@@ -106,6 +114,11 @@ public class PeerStorage implements Serializable {
 
     public String getStoragePath() {
         return storagePath;
+    }
+
+    public byte[] restoreFileData(String fileId) throws IOException {
+        File file = new File(this.storagePath + fileId);
+        return Files.readAllBytes(file.toPath());
     }
 
     @Override

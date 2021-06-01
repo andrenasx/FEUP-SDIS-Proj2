@@ -3,7 +3,7 @@ package messages.chord;
 import chord.ChordNodeReference;
 import messages.Message;
 import peer.Peer;
-import tasks.protocol.LookupTask;
+import tasks.chord.LookupTask;
 
 import javax.net.ssl.SSLSocket;
 

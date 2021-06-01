@@ -1,4 +1,4 @@
-package tasks.chord;
+package tasks.protocol;
 
 import messages.protocol.BackupMessage;
 import messages.protocol.ErrorMessage;
@@ -17,27 +17,25 @@ public class BackupTask extends Task {
 
     @Override
     public void run() {
-        // TODO check if peer has space or already has file, send ErrorMessage
-        System.out.println("Testing capacity.. (to be implemented)");
         BackupMessage backupMessage = (BackupMessage) message;
-        try (FileOutputStream fos = new FileOutputStream(peer.getPeerStorage().getStoragePath() + (backupMessage.getStorageFile().getFileId()))) {
-            if(peer.getPeerStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())){
+        try {
+            if (peer.getPeerStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())) {
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "HAVEFILE");
                 peer.sendMessage(socket, error);
             }
-            else if(peer.getPeerStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())){
+            else if (peer.getPeerStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())) {
+                FileOutputStream fos = new FileOutputStream(peer.getPeerStorage().getStoragePath() + backupMessage.getStorageFile().getFileId());
                 fos.write(backupMessage.getFileData());
-                System.out.println("[BACKUP] Ready to receive file...");
 
+                // Stored message, send Okay
                 OkMessage okay = new OkMessage(peer.getSelfReference());
                 peer.sendMessage(socket, okay);
                 peer.getPeerStorage().addStoredFile(backupMessage.getStorageFile());
             }
-            else{
+            else {
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "FULL");
                 peer.sendMessage(socket, error);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
