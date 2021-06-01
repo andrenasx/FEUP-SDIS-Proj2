@@ -19,6 +19,7 @@ public class ChordNode extends SSLSocketPeer {
     private ChordNodeReference bootPeer;
     private ChordNodeReference predecessor;
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
+    private ChordNodeReference[] successors = new ChordNodeReference[3];
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
     private int next = 1;
 
@@ -57,6 +58,10 @@ public class ChordNode extends SSLSocketPeer {
 
     public synchronized ChordNodeReference getRoutingTable(int position) {
         return routingTable[position - 1];
+    }
+
+    public synchronized ChordNodeReference[] getRoutingTable() {
+        return routingTable;
     }
 
     public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
@@ -99,7 +104,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public ChordNodeReference findSuccessor(int guid) {
-        System.out.println("\n\n[CHORD] Finding successor...");
+        System.out.println("\n\n[CHORD] Finding successor..." + guid);
         //System.out.println(getSuccessor());
 
         if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
@@ -108,7 +113,7 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         if (this.between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
-            //System.out.println("returned successor");
+            System.out.println("returned successor");
             return this.getSuccessor();
         }
 
@@ -120,7 +125,7 @@ public class ChordNode extends SSLSocketPeer {
         }*/
 
         ChordNodeReference closest = this.closestPrecedingNode(guid);
-        //System.out.println("Closest to " + guid + ": " + closest);
+        System.out.println("Closest to " + guid + ": " + closest);
 
         try {
             LookupMessage request = new LookupMessage(self, guid);
@@ -139,6 +144,21 @@ public class ChordNode extends SSLSocketPeer {
 
     public void stabilize() {
         System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
+
+        try{
+            SuccessorsMessage request = new SuccessorsMessage(self);
+
+            //System.out.println("Client wrote: " + request);
+            SuccessorsReplyMessage response = (SuccessorsReplyMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
+            //System.out.println("Client received: " + response);
+
+            this.successors = response.getSuccessors();
+
+        }catch(Exception e){
+            System.out.println("Successor down");
+            setSuccessor(this.successors[0]);
+            //e.printStackTrace();
+        }
 
         try {
             PredecessorMessage request = new PredecessorMessage(self);
