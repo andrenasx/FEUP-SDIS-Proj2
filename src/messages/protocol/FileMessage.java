@@ -11,7 +11,7 @@ public class FileMessage extends Message {
     private final byte[] fileData;
 
     public FileMessage(ChordNodeReference senderReference, byte[] fileData) {
-        super("FILE", senderReference);
+        super(senderReference);
         this.fileData = fileData;
     }
 

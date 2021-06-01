@@ -11,7 +11,7 @@ public class GetFileMessage extends Message {
     private final String fileId;
 
     public GetFileMessage(ChordNodeReference senderReference, String fileId) {
-        super("GET", senderReference);
+        super(senderReference);
         this.fileId = fileId;
     }
 

@@ -9,7 +9,7 @@ import javax.net.ssl.SSLSocket;
 
 public class CopyKeysMessage extends Message {
     public CopyKeysMessage(ChordNodeReference senderReference) {
-        super("COPY", senderReference);
+        super(senderReference);
     }
 
     @Override

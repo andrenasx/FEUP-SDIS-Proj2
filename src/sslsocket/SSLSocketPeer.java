@@ -90,11 +90,11 @@ public class SSLSocketPeer implements Runnable {
         return (Message) new ObjectInputStream(clientSocket.getInputStream()).readObject();
     }
 
-    public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend) throws Exception {
+    public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend) throws IOException {
         return this.sendAndReceiveMessage(serverSocketAddress, toSend, 0);
     }
 
-    public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend, int timeout) throws Exception {
+    public Message sendAndReceiveMessage(InetSocketAddress serverSocketAddress, Message toSend, int timeout) throws IOException {
         SSLSocket clientSocket = this.createClient(serverSocketAddress, timeout);
         this.sendMessage(clientSocket, toSend);
         Message message;
@@ -110,7 +110,7 @@ public class SSLSocketPeer implements Runnable {
         return message;
     }
 
-    public void sendClientMessage(InetSocketAddress serverSocketAddress, Message toSend) throws Exception {
+    public void sendClientMessage(InetSocketAddress serverSocketAddress, Message toSend) throws IOException {
         sendClientMessage(serverSocketAddress, toSend, 0);
     }
 

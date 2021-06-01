@@ -12,7 +12,7 @@ public class LookupReplyMessage extends Message {
     private final ChordNodeReference node;
 
     public LookupReplyMessage(ChordNodeReference senderReference, ChordNodeReference successor) {
-        super("LOOKUPREPLY", senderReference);
+        super(senderReference);
         this.node = successor;
     }
 

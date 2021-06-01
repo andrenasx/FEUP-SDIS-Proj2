@@ -9,7 +9,7 @@ import javax.net.ssl.SSLSocket;
 
 public class CheckMessage extends Message {
     public CheckMessage(ChordNodeReference senderReference) {
-        super("CHECK", senderReference);
+        super(senderReference);
     }
 
     @Override

@@ -76,8 +76,9 @@ public class NodeStorage implements Serializable {
     }
 
     public void addSentFile(StorageFile storageFile) {
-        if (this.sentFiles.containsKey(storageFile.getFileId())) {
-            for (Integer key : this.sentFiles.get(storageFile.getFileId()).getStoringKeys()) {
+        if (this.sentFiles.containsKey(storageFile.getFilePath())) {
+            StorageFile storedFile = this.sentFiles.get(storageFile.getFilePath());
+            for (Integer key : storedFile.getStoringKeys()) {
                 storageFile.addStoringKey(key);
             }
         }
@@ -120,6 +121,10 @@ public class NodeStorage implements Serializable {
         return this.occupiedSpace + fileSize <= this.storageCapacity;
     }
 
+    public void setStorageCapacity(double capacity) {
+        this.storageCapacity = capacity;
+    }
+
     public double getStorageCapacity() {
         return storageCapacity;
     }
@@ -137,8 +142,12 @@ public class NodeStorage implements Serializable {
     }
 
     public void deleteStoredFile(String fileId) throws IOException {
-        Files.deleteIfExists(Paths.get(this.getStoragePath() + fileId));
-        this.removeStoredFile(fileId);
+        if (Files.deleteIfExists(Paths.get(this.getStoragePath() + fileId))) {
+            this.removeStoredFile(fileId);
+        }
+        else {
+            throw new IOException();
+        }
     }
 
     @Override

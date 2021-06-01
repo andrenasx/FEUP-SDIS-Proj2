@@ -13,7 +13,7 @@ public class GuidMessage extends Message {
     private final ChordNodeReference successor;
 
     public GuidMessage(ChordNodeReference senderReference, int guid, ChordNodeReference successor) {
-        super("GUID", senderReference);
+        super(senderReference);
 
         this.guid = guid;
         this.successor = successor;

@@ -30,7 +30,7 @@ public class TestApp {
 
                     String filepath = args[2];
                     int replicationDeg = Integer.parseInt(args[3]);
-                    peer.backup(filepath, replicationDeg);
+                    peer.backup(filepath, replicationDeg, true);
 
                     break;
                 }

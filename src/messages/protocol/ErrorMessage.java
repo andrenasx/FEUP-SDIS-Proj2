@@ -11,7 +11,7 @@ public class ErrorMessage extends Message {
     private final String error;
 
     public ErrorMessage(ChordNodeReference senderReference, String error) {
-        super("ERROR", senderReference);
+        super(senderReference);
         this.error = error;
     }
 

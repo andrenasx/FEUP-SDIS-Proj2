@@ -10,11 +10,9 @@ import java.net.InetSocketAddress;
 
 //<TYPE> <PROTOCOL/OPERATION> <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> <\r\n\r\n> <BODY>
 public abstract class Message implements Serializable {
-    protected final String type;
     protected ChordNodeReference senderReference;
 
-    public Message(String type, ChordNodeReference senderReference) {
-        this.type = type;
+    public Message(ChordNodeReference senderReference) {
         this.senderReference = senderReference;
     }
 

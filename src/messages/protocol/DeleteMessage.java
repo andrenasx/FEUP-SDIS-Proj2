@@ -12,7 +12,7 @@ public class DeleteMessage extends Message {
     private final String fileId;
 
     public DeleteMessage(ChordNodeReference senderReference, String fileId) {
-        super("DELETE", senderReference);
+        super(senderReference);
 
         this.fileId = fileId;
     }

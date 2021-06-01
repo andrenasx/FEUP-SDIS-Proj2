@@ -3,25 +3,33 @@ package messages.chord;
 import chord.ChordNodeReference;
 import messages.Message;
 import peer.Peer;
-import tasks.chord.PredecessorTask;
+import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 
-//CHORD PREDECESSOR <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n
+//CHORD PREDECESSORREPLY <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <PRED. GUID> <PRED. IP> <PRED. PORT>
 public class PredecessorMessage extends Message {
-    public PredecessorMessage(ChordNodeReference senderReference) {
-        super("PREDECESSOR", senderReference);
+    private final ChordNodeReference predecessor;
+
+    public PredecessorMessage(ChordNodeReference senderReference, ChordNodeReference predecessor) {
+        super(senderReference);
+        this.predecessor = predecessor;
     }
 
     @Override
-    public PredecessorTask getTask(Peer peer, SSLSocket socket) {
-        return new PredecessorTask(this, peer, socket);
+    public Task getTask(Peer peer, SSLSocket socket) {
+        return null;
     }
 
     @Override
     public String toString() {
         return "PredecessorMessage {" +
                 "sender=" + this.getSenderNodeReference() +
+                ", predecessor=" + this.predecessor +
                 '}';
+    }
+
+    public ChordNodeReference getPredecessor() {
+        return this.predecessor;
     }
 }

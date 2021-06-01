@@ -11,11 +11,11 @@ public class OkMessage extends Message {
     private String body = null;
 
     public OkMessage(ChordNodeReference senderReference) {
-        super("OK", senderReference);
+        super(senderReference);
     }
 
     public OkMessage(ChordNodeReference senderReference, String body) {
-        super("OK", senderReference);
+        super(senderReference);
         this.body = body;
     }
 

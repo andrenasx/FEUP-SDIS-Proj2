@@ -1,16 +1,16 @@
 package tasks.chord;
 
 import chord.ChordNodeReference;
+import messages.chord.GetPredecessorMessage;
 import messages.chord.PredecessorMessage;
-import messages.chord.PredecessorReplyMessage;
 import peer.Peer;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 
-public class PredecessorTask extends Task {
-    public PredecessorTask(PredecessorMessage message, Peer peer, SSLSocket socket) {
+public class GetPredecessorTask extends Task {
+    public GetPredecessorTask(GetPredecessorMessage message, Peer peer, SSLSocket socket) {
         super(message, peer, socket);
     }
 
@@ -19,7 +19,7 @@ public class PredecessorTask extends Task {
         //sends response with my predecessor
         ChordNodeReference predecessor = this.peer.getPredecessor();
 
-        PredecessorReplyMessage response = new PredecessorReplyMessage(peer.getSelfReference(), predecessor);
+        PredecessorMessage response = new PredecessorMessage(peer.getSelfReference(), predecessor);
 
         try {
             this.peer.sendMessage(socket, response);

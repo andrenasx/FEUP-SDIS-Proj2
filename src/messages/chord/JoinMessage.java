@@ -10,7 +10,7 @@ import javax.net.ssl.SSLSocket;
 //CHORD JOIN <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n
 public class JoinMessage extends Message {
     public JoinMessage(ChordNodeReference senderReference) {
-        super("JOIN", senderReference);
+        super(senderReference);
     }
 
     @Override

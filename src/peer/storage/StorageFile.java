@@ -13,8 +13,8 @@ public class StorageFile implements Serializable {
     private String fileId;
     private String filePath;
     private double size;
-    private int replicationDegree;
-    private Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
+    private int desiredRepDegree;
+    private final Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
 
     public StorageFile(int key, ChordNodeReference owner, String fileId, String filePath, long size, int replicationDegree) {
         this.key = key;
@@ -22,7 +22,7 @@ public class StorageFile implements Serializable {
         this.owner = owner;
         this.filePath = filePath;
         this.size = size;
-        this.replicationDegree = replicationDegree;
+        this.desiredRepDegree = replicationDegree;
     }
 
     public int getKey() {
@@ -78,11 +78,11 @@ public class StorageFile implements Serializable {
     }
 
     public int getReplicationDegree() {
-        return replicationDegree;
+        return desiredRepDegree;
     }
 
     public void setReplicationDegree(int replicationDegree) {
-        this.replicationDegree = replicationDegree;
+        this.desiredRepDegree = replicationDegree;
     }
 
 
@@ -91,7 +91,7 @@ public class StorageFile implements Serializable {
                 ", fileId=" + fileId +
                 ", owner=" + owner.liteString() +
                 ", size=" + size + " B" +
-                ", replicationDegree=" + replicationDegree +
+                ", replicationDegree=" + desiredRepDegree +
                 ", storingKeys=" +
                 "}";
     }
@@ -104,7 +104,7 @@ public class StorageFile implements Serializable {
                 ", filename=" + filePath +
                 ", owner=" + owner +
                 ", size=" + size +
-                ", replicationDegree=" + replicationDegree +
+                ", replicationDegree=" + desiredRepDegree +
                 '}';
     }
 }

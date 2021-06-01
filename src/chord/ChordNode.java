@@ -50,42 +50,6 @@ public class ChordNode extends SSLSocketPeer {
         this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 6, 10, TimeUnit.SECONDS);
     }
 
-    public synchronized ChordNodeReference getPredecessor() {
-        return predecessor;
-    }
-
-    public synchronized void setPredecessor(ChordNodeReference predecessor) {
-        this.predecessor = predecessor;
-    }
-
-    public synchronized ChordNodeReference getSuccessor() {
-        return routingTable[0];
-    }
-
-    public synchronized void setSuccessor(ChordNodeReference successor) {
-        this.routingTable[0] = successor;
-    }
-
-    public synchronized ChordNodeReference getRoutingTable(int position) {
-        return routingTable[position - 1];
-    }
-
-    public synchronized ChordNodeReference[] getSuccessorsList() {
-        return successorsList;
-    }
-
-    public synchronized void setSuccessorsList(int position, ChordNodeReference node) {
-        this.successorsList[position] = node;
-    }
-
-    public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
-        this.routingTable[position - 1] = reference;
-    }
-
-    public synchronized ChordNodeReference getChordNodeReference(int position) {
-        return this.routingTable[position - 1];
-    }
-
     public boolean join() {
         InetSocketAddress bootSocketAddress = this.bootPeer.getSocketAddress();
 
@@ -131,7 +95,7 @@ public class ChordNode extends SSLSocketPeer {
 
             List<Future<Boolean>> files = new ArrayList<>();
             for (StorageFile delegatedFile : copyKeysReplyMessage.getDelegatedFiles()) {
-                files.add(((Peer) this).getScheduler().submit(() -> getDelegatedFile(delegatedFile)));
+                files.add(((Peer) this).getScheduler().submit(() -> restoreDelegatedFile(delegatedFile)));
             }
 
             for (Future<Boolean> result : files) {
@@ -148,7 +112,7 @@ public class ChordNode extends SSLSocketPeer {
         return true;
     }
 
-    private boolean getDelegatedFile(StorageFile delegatedFile) {
+    public boolean restoreDelegatedFile(StorageFile delegatedFile) {
         GetFileMessage getFileMessage = new GetFileMessage(this.getSuccessor(), delegatedFile.getFileId());
         if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
             System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
@@ -230,10 +194,10 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         try {
-            PredecessorMessage request = new PredecessorMessage(self);
+            GetPredecessorMessage request = new GetPredecessorMessage(self);
 
             //System.out.println("Client wrote: " + request);
-            PredecessorReplyMessage response = (PredecessorReplyMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
+            PredecessorMessage response = (PredecessorMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
             //System.out.println("Client received: " + response);
 
             ChordNodeReference predecessor = response.getPredecessor();
@@ -306,6 +270,43 @@ public class ChordNode extends SSLSocketPeer {
             return currentId < successorId ? (currentId < id && id < successorId) : (successorId > id || id > currentId);
     }
 
+
+    public synchronized ChordNodeReference getPredecessor() {
+        return predecessor;
+    }
+
+    public synchronized void setPredecessor(ChordNodeReference predecessor) {
+        this.predecessor = predecessor;
+    }
+
+    public synchronized ChordNodeReference getSuccessor() {
+        return routingTable[0];
+    }
+
+    public synchronized void setSuccessor(ChordNodeReference successor) {
+        this.routingTable[0] = successor;
+    }
+
+    public synchronized ChordNodeReference getRoutingTable(int position) {
+        return routingTable[position - 1];
+    }
+
+    public synchronized ChordNodeReference[] getSuccessorsList() {
+        return successorsList;
+    }
+
+    public synchronized void setSuccessorsList(int position, ChordNodeReference node) {
+        this.successorsList[position] = node;
+    }
+
+    public synchronized void setChordNodeReference(int position, ChordNodeReference reference) {
+        this.routingTable[position - 1] = reference;
+    }
+
+    public synchronized ChordNodeReference getChordNodeReference(int position) {
+        return this.routingTable[position - 1];
+    }
+
     public ChordNodeReference getSelfReference() {
         return this.self;
     }
@@ -316,6 +317,10 @@ public class ChordNode extends SSLSocketPeer {
 
     public NodeStorage getNodeStorage() {
         return nodeStorage;
+    }
+
+    public synchronized void setSuccessorsList(ChordNodeReference[] successorsList) {
+        this.successorsList = successorsList;
     }
 
     public String chordState() {
@@ -339,5 +344,23 @@ public class ChordNode extends SSLSocketPeer {
         this.scheduler.shutdown();
         super.stop();
         System.out.println("[CHORD] Node shutdown successfully");
+    }
+
+    public void shutdownSafely() {
+        try {
+            AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
+            this.sendClientMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);
+        } catch (Exception e) {
+            System.out.println("[CHORD] Failed sending alert message to successor");
+            e.printStackTrace();
+        }
+
+        try {
+            AlertPredecessorMessage alertPredecessorMessage = new AlertPredecessorMessage(this.self, this.getSuccessorsList());
+            this.sendClientMessage(this.getSuccessor().getSocketAddress(), alertPredecessorMessage);
+        } catch (Exception e) {
+            System.out.println("[CHORD] Failed sending alert message to predecessor");
+            e.printStackTrace();
+        }
     }
 }

@@ -12,7 +12,7 @@ public class LookupMessage extends Message {
     private final int guid;
 
     public LookupMessage(ChordNodeReference senderReference, int guid) {
-        super("LOOKUP", senderReference);
+        super(senderReference);
         this.guid = guid;
     }
 

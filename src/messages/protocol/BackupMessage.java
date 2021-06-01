@@ -13,7 +13,7 @@ public class BackupMessage extends Message {
     private final byte[] fileData;
 
     public BackupMessage(ChordNodeReference senderReference, StorageFile storageFile, byte[] fileData) {
-        super("BACKUP", senderReference);
+        super(senderReference);
 
         this.storageFile = storageFile;
         this.fileData = fileData;

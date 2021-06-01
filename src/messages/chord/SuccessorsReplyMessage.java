@@ -13,7 +13,7 @@ public class SuccessorsReplyMessage extends Message {
     private final ChordNodeReference[] successors;
 
     public SuccessorsReplyMessage(ChordNodeReference senderReference, ChordNodeReference[] successors) {
-        super("SUCCESSORSREPLY", senderReference);
+        super(senderReference);
         this.successors = successors;
     }
 

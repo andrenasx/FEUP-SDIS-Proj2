@@ -13,7 +13,7 @@ public class CopyKeysReplyMessage extends Message {
     private List<StorageFile> delegatedFiles;
 
     public CopyKeysReplyMessage(ChordNodeReference senderReference, List<StorageFile> delegatedFiles) {
-        super("COPY", senderReference);
+        super(senderReference);
         this.delegatedFiles = delegatedFiles;
     }
 

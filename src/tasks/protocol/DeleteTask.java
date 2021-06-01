@@ -26,7 +26,7 @@ public class DeleteTask extends Task {
                     peer.getNodeStorage().deleteStoredFile(deleteMessage.getFileId());
                     OkMessage okay = new OkMessage(peer.getSelfReference(), Integer.toString(storageFile.getKey()));
                     peer.sendMessage(socket, okay);
-                    System.out.println("[BACKUP] Successfully deleted file. FileId=" + deleteMessage.getFileId());
+                    System.out.println("[DELETE] Successfully deleted file. FileId=" + deleteMessage.getFileId());
                 } catch (Exception e) {
                     ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTDELETED");
                     peer.sendMessage(socket, error);
