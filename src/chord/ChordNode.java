@@ -3,7 +3,7 @@ package chord;
 import messages.chord.*;
 import messages.protocol.CopyKeysMessage;
 import messages.protocol.CopyKeysReplyMessage;
-import messages.protocol.FileMessage;
+import messages.protocol.DeleteMessage;
 import messages.protocol.GetFileMessage;
 import peer.Peer;
 import peer.storage.NodeStorage;
@@ -11,8 +11,10 @@ import peer.storage.StorageFile;
 import sslsocket.SSLSocketPeer;
 import utils.Utils;
 
-import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +44,10 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     protected void startPeriodicStabilize() {
-        this.scheduler.scheduleAtFixedRate(this::stabilize, 5, 10, TimeUnit.SECONDS);
-        this.scheduler.scheduleAtFixedRate(this::fixFingers, 3, 5, TimeUnit.SECONDS);
-        this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 10, 15, TimeUnit.SECONDS);
+        System.out.println("[CHORD] Started periodic stabilization");
+        this.scheduler.scheduleAtFixedRate(this::stabilize, 4, 5, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::fixFingers, 2, 3, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::checkPredecessor, 6, 10, TimeUnit.SECONDS);
     }
 
     public synchronized ChordNodeReference getPredecessor() {
@@ -126,14 +129,16 @@ public class ChordNode extends SSLSocketPeer {
             CopyKeysMessage copyKeysMessage = new CopyKeysMessage(this.self);
             CopyKeysReplyMessage copyKeysReplyMessage = (CopyKeysReplyMessage) this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), copyKeysMessage);
 
-            for (StorageFile delegatedFile: copyKeysReplyMessage.getDelegatedFiles()) {
-                GetFileMessage getFileMessage = new GetFileMessage(this.getSuccessor(), delegatedFile.getFileId());
-                if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
-                    System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
+            List<Future<Boolean>> files = new ArrayList<>();
+            for (StorageFile delegatedFile : copyKeysReplyMessage.getDelegatedFiles()) {
+                files.add(((Peer) this).getScheduler().submit(() -> getDelegatedFile(delegatedFile)));
+            }
+
+            for (Future<Boolean> result : files) {
+                if (!result.get()) {
+                    System.err.println("[ERROR-CHORD] Couldn't restore delegated file");
                     return false;
                 }
-
-                this.nodeStorage.addStoredFile(delegatedFile);
             }
         } catch (Exception e) {
             System.err.println("[ERROR-CHORD] Could not get delegated files");
@@ -144,8 +149,23 @@ public class ChordNode extends SSLSocketPeer {
         return true;
     }
 
+    private boolean getDelegatedFile(StorageFile delegatedFile) {
+        GetFileMessage getFileMessage = new GetFileMessage(this.getSuccessor(), delegatedFile.getFileId());
+        if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
+            System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
+            return false;
+        }
+
+        DeleteMessage deleteMessage = new DeleteMessage(this.getSuccessor(), delegatedFile.getFileId());
+        String result = ((Peer) this).deleteFile(deleteMessage, this.getSuccessor(), delegatedFile, true);
+        if (result.contains("ERROR")) return false;
+
+        this.nodeStorage.addStoredFile(delegatedFile);
+        return true;
+    }
+
     public ChordNodeReference findSuccessor(int guid) {
-        System.out.println("\n\n[CHORD] Finding successor...");
+        //System.out.println("\n\n[CHORD] Finding successor...");
         //System.out.println(getSuccessor());
 
         if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
@@ -184,7 +204,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public void stabilize() {
-        System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
+        //System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
         this.setSuccessorsList(0, getSuccessor());
 
         boolean success = false;
@@ -201,7 +221,7 @@ public class ChordNode extends SSLSocketPeer {
                 success = true;
 
             } catch (Exception e) {
-                System.out.println("Successor down");
+                System.out.println("[ERROR-CHORD] Successor down");
                 nextSuccessor++;
                 if (nextSuccessor == 3) return;
                 setSuccessor(this.successorsList[nextSuccessor]);
@@ -245,7 +265,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public void fixFingers() {
-        System.out.println("\n\n[CHORD-PERIODIC] fixing fingers...");
+        //System.out.println("\n\n[CHORD-PERIODIC] fixing fingers...");
 
         int guid = this.self.getGuid() + (int) Math.pow(2, this.next - 1);
         guid = guid % Utils.CHORD_MAX_PEERS;
@@ -260,7 +280,7 @@ public class ChordNode extends SSLSocketPeer {
 
     public void checkPredecessor() {
         if (this.predecessor != null) {
-            System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
+            //System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
 
             try {
                 this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);

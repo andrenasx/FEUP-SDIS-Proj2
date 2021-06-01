@@ -3,8 +3,6 @@ package messages.protocol;
 import chord.ChordNodeReference;
 import messages.Message;
 import peer.Peer;
-import peer.storage.StorageFile;
-import tasks.protocol.BackupTask;
 import tasks.protocol.DeleteTask;
 
 import javax.net.ssl.SSLSocket;

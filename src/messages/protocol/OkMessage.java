@@ -9,6 +9,7 @@ import javax.net.ssl.SSLSocket;
 
 public class OkMessage extends Message {
     private String body = null;
+
     public OkMessage(ChordNodeReference senderReference) {
         super("OK", senderReference);
     }

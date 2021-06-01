@@ -7,7 +7,8 @@ import peer.Peer;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
-import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 
 public class BackupTask extends Task {
@@ -24,8 +25,7 @@ public class BackupTask extends Task {
                 peer.sendMessage(socket, error);
             }
             else if (peer.getNodeStorage().hasEnoughSpace(backupMessage.getStorageFile().getSize())) {
-                FileOutputStream fos = new FileOutputStream(peer.getNodeStorage().getStoragePath() + backupMessage.getStorageFile().getFileId());
-                fos.write(backupMessage.getFileData());
+                Files.write(Paths.get(peer.getNodeStorage().getStoragePath() + backupMessage.getStorageFile().getFileId()), backupMessage.getFileData());
 
                 // Stored message, send Okay
                 OkMessage okay = new OkMessage(peer.getSelfReference());

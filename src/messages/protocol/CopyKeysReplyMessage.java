@@ -11,6 +11,7 @@ import java.util.List;
 
 public class CopyKeysReplyMessage extends Message {
     private List<StorageFile> delegatedFiles;
+
     public CopyKeysReplyMessage(ChordNodeReference senderReference, List<StorageFile> delegatedFiles) {
         super("COPY", senderReference);
         this.delegatedFiles = delegatedFiles;

@@ -31,7 +31,8 @@ public class DeleteTask extends Task {
                     ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTDELETED");
                     peer.sendMessage(socket, error);
                 }
-            } else {
+            }
+            else {
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTFOUND");
                 peer.sendMessage(socket, error);
             }

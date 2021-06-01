@@ -1,7 +1,5 @@
 package peer.storage;
 
-import peer.Peer;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,7 +44,8 @@ public class NodeStorage implements Serializable {
         if (storage == null) {
             storage = new NodeStorage(id);
             System.out.println("[STORAGE] Created new storage");
-        } else {
+        }
+        else {
             System.out.println("[STORAGE] Loaded Peer storage state from file successfully");
         }
 
@@ -102,7 +101,11 @@ public class NodeStorage implements Serializable {
     }
 
     public void removeStoredFile(String fileId) {
-        this.storedFiles.remove(fileId);
+        StorageFile storedFile = this.getStoredFile(fileId);
+        if (storedFile != null) {
+            this.freeSpace(storedFile.getSize());
+            this.storedFiles.remove(fileId);
+        }
     }
 
     public synchronized void occupySpace(double space) {
@@ -113,8 +116,8 @@ public class NodeStorage implements Serializable {
         this.occupiedSpace -= space;
     }
 
-    public boolean hasEnoughSpace(double chunkSize) {
-        return this.occupiedSpace + chunkSize <= this.storageCapacity;
+    public boolean hasEnoughSpace(double fileSize) {
+        return this.occupiedSpace + fileSize <= this.storageCapacity;
     }
 
     public double getStorageCapacity() {

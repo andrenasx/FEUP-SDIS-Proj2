@@ -1,6 +1,5 @@
 package tasks.chord;
 
-import chord.ChordNodeReference;
 import messages.chord.SuccessorsMessage;
 import messages.chord.SuccessorsReplyMessage;
 import peer.Peer;
@@ -8,7 +7,7 @@ import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
 
 public class SuccessorsTask extends Task {
     public SuccessorsTask(SuccessorsMessage message, Peer peer, SSLSocket socket) {

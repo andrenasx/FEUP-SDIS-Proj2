@@ -12,7 +12,7 @@ public class StorageFile implements Serializable {
     private ChordNodeReference owner;
     private String fileId;
     private String filePath;
-    private long size;
+    private double size;
     private int replicationDegree;
     private Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
 
@@ -69,7 +69,7 @@ public class StorageFile implements Serializable {
         this.filePath = filePath;
     }
 
-    public long getSize() {
+    public double getSize() {
         return size;
     }
 
