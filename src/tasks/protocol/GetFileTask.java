@@ -23,7 +23,7 @@ public class GetFileTask extends Task {
 
         // Don't have the requested file
         if (storageFile == null) {
-            System.err.println("[ERROR-GETFILE] Don't have requested file! FileId=" + restoreMessage.getFileId());
+            System.err.println("[ERROR-RESTORE] Don't have requested file! FileId=" + restoreMessage.getFileId());
             ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOFILE");
             try {
                 peer.sendMessage(socket, error);
@@ -36,9 +36,9 @@ public class GetFileTask extends Task {
                 byte[] fileData = peer.getNodeStorage().restoreFileData(restoreMessage.getFileId());
                 FileMessage fileMessage = new FileMessage(peer.getSelfReference(), fileData);
                 peer.sendMessage(socket, fileMessage);
-                System.out.println("[GETFILE] Read and sent file data successfully for file " + storageFile.getFilePath());
+                System.out.println("[RESTORE] Sent file data successfully to peer " + message.getSenderGuid() + " for file " + storageFile.getFilePath());
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("[ERROR-RESTORE] Couldn't restore file " + restoreMessage.getFileId());
             }
         }
     }

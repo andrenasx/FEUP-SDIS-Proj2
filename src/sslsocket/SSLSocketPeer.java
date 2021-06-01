@@ -22,7 +22,6 @@ public class SSLSocketPeer implements Runnable {
 
     public SSLSocketPeer(InetSocketAddress socketAddress) throws IOException {
         this.socketAddress = socketAddress;
-        System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
 
         // Truststore
         System.setProperty("javax.net.ssl.trustStore", "../keys/truststore");
@@ -58,10 +57,14 @@ public class SSLSocketPeer implements Runnable {
         }
     }
 
-    public void stop() throws IOException {
+    public void stop() {
         this.active = false;
-        this.serverSocket.close();
-        System.out.println("[SSLSocket] Server close successfully");
+        try {
+            this.serverSocket.close();
+            System.out.println("[SSLSocket] Server close successfully");
+        } catch (IOException e) {
+            System.err.println("[SSLSocket] Error closing server socket");
+        }
     }
 
     // CLIENT SIDE

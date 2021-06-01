@@ -24,17 +24,6 @@ public abstract class Utils {
         return new String(hashed).hashCode() & 0x7fffffff % CHORD_MAX_PEERS;
     }
 
-    public static String progressBar(long current, long total) {
-        int size = 40;
-
-        int percentage = (int) ((current / (double) total) * size);
-
-        String bar = "|" + "=".repeat(Math.max(0, percentage)) +
-                " ".repeat(Math.max(0, size - percentage)) +
-                "|";
-        return bar;
-    }
-
     public static String generateHashForFile(String filename, BasicFileAttributes attributes) {
         String creationTime = String.valueOf(attributes.creationTime().toMillis());
         String modificationTime = String.valueOf(attributes.lastModifiedTime().toMillis());
@@ -92,12 +81,5 @@ public abstract class Utils {
         }
 
         return String.format("%.2f %s", bytes, type);
-    }
-
-    public static String rate(long start, long current, long bytes) {
-        double delta = (current - start) / 1000.0;
-        double rate = (double) bytes / delta;
-
-        return prettySize(rate) + "/s";
     }
 }

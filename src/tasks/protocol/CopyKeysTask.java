@@ -24,13 +24,11 @@ public class CopyKeysTask extends Task {
                 delegatedFiles.add(storageFile);
             }
         }
-
         try {
             peer.sendMessage(socket, new CopyKeysReplyMessage(peer.getSelfReference(), delegatedFiles));
+            System.out.println("[COPY] Sent delegated files to " + message.getSenderGuid());
         } catch (IOException e) {
-            System.err.println("[ERROR-COPY] Couldn't send delegated files");
-            e.printStackTrace();
+            System.err.println("[ERROR-COPY] Couldn't send delegated files " + message.getSenderGuid());
         }
-
     }
 }

@@ -142,7 +142,6 @@ public class ChordNode extends SSLSocketPeer {
             }
         } catch (Exception e) {
             System.err.println("[ERROR-CHORD] Could not get delegated files");
-            e.printStackTrace();
             return false;
         }
 
@@ -338,6 +337,7 @@ public class ChordNode extends SSLSocketPeer {
 
     public void shutdownNode() {
         this.scheduler.shutdown();
+        super.stop();
         System.out.println("[CHORD] Node shutdown successfully");
     }
 }

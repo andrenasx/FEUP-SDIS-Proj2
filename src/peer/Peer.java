@@ -94,12 +94,6 @@ public class Peer extends ChordNode implements PeerInit {
 
     public void shutdown() {
         super.shutdownNode();
-        try {
-            super.stop();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         System.out.println("[PEER] Peer shutdown successfully");
     }
 
@@ -206,7 +200,7 @@ public class Peer extends ChordNode implements PeerInit {
             }
 
             if (this.restoreFile(rm, node, restoreFilePath)) {
-                System.out.println("[RESTORE] Successfull restore on file " + filepath);
+                System.out.println("[RESTORE] Successful restore on file " + filepath);
                 return;
             }
         }
