@@ -37,6 +37,14 @@ public class StorageFile implements Serializable {
         this.storingKeys.add(key);
     }
 
+    public synchronized void removeStoringKey(int key) {
+        if (this.storingKeys.remove(key)) {
+            System.out.println("REMOVED FROM STORED FILE" + key);
+        } else {
+            System.out.println("FAILED REMOVING" + key);
+        }
+    }
+
     public Set<Integer> getStoringKeys() {
         return this.storingKeys;
     }
@@ -83,8 +91,8 @@ public class StorageFile implements Serializable {
 
 
     public String liteString() {
-        return "{filename= " + filePath +
-                ", fileId= " + fileId +
+        return "{filename=" + filePath +
+                ", fileId=" + fileId +
                 ", owner=" + owner.liteString() +
                 ", size=" + size + " B" +
                 ", replicationDegree=" + replicationDegree + "}";
@@ -94,8 +102,8 @@ public class StorageFile implements Serializable {
     @Override
     public String toString() {
         return "StorageFile{" +
-                "fileId= " + fileId +
-                ", filename= " + filePath +
+                "fileId=" + fileId +
+                ", filename=" + filePath +
                 ", owner=" + owner +
                 ", size=" + size +
                 ", replicationDegree=" + replicationDegree +

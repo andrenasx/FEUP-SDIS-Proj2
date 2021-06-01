@@ -35,10 +35,8 @@ public class ChordNodeReference implements Serializable {
     }
 
     public String liteString() {
-        return "{" +
-                "guid=" + guid +
-                ", address=" + address +
-                '}';
+        return "{guid=" + guid +
+                ", address=" + address + '}';
     }
 
     @Override

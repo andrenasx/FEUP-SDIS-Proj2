@@ -24,8 +24,8 @@ public class Peer extends ChordNode implements PeerInit {
     private final String serviceAccessPoint;
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(20);
 
-    public Peer(String serviceAccessPoint, InetSocketAddress socketAddress, InetSocketAddress bootScoketAddress, boolean boot) throws Exception {
-        super(socketAddress, bootScoketAddress, boot);
+    public Peer(String serviceAccessPoint, InetSocketAddress socketAddress, InetSocketAddress bootSocketAddress, boolean boot) throws Exception {
+        super(socketAddress, bootSocketAddress, boot);
         this.serviceAccessPoint = serviceAccessPoint;
     }
 
@@ -128,11 +128,12 @@ public class Peer extends ChordNode implements PeerInit {
 
         Map<ChordNodeReference, Integer> peersToStore = new HashMap<>();
         for (int guid : guids) {
-            //System.out.println("Searching successor for: " + guid);
+            System.out.println("Searching successor for: " + guid);
             ChordNodeReference peer = this.findSuccessor(guid);
+            System.out.println("RETURN FROM FIND SUCC: " + peer);
             if (peer.getGuid() != this.getSelfReference().getGuid() && !peersToStore.containsKey(peer)) {
                 peersToStore.put(peer, guid);
-                //System.out.println("Adding peer to store: " + peer);
+                System.out.println("Adding peer to store: " + peer);
                 if (peersToStore.size() == replicationDegree) break;
             }
         }
@@ -244,19 +245,19 @@ public class Peer extends ChordNode implements PeerInit {
 
 
         try {
-            StringBuilder sbackups = new StringBuilder("[DELETE] Result for " + filepath + "\n");
-            // Wait for backups to finish and print result
+            StringBuilder sdeletes = new StringBuilder("[DELETE] Result for " + filepath + "\n");
+            // Wait for deletes to finish and print result
             for (Future<String> delete : deletes) {
-                sbackups.append(delete.get()).append("\n");
+                sdeletes.append(delete.get()).append("\n");
             }
-            System.out.println(sbackups);
+           System.out.println(sdeletes);
+
+            if (storageFile.getStoringKeys().isEmpty())
+                this.getNodeStorage().removeSentFile(filepath);
+
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
-
-
-
-
     }
 
     @Override
@@ -331,7 +332,7 @@ public class Peer extends ChordNode implements PeerInit {
             Message response = this.sendAndReceiveMessage(storingPeer.getSocketAddress(), message);
 
             if (response instanceof OkMessage) {
-                //storageFile.addStoringKey(message.getStorageFile().getKey());
+                storageFile.removeStoringKey(Integer.parseInt(((OkMessage) response).getBody()));
                 return "[DELETE] Successful delete file " + filePath + " for peer " + storingPeer.getGuid();
             }
             else if (response instanceof ErrorMessage) {

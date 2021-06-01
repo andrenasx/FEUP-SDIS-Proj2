@@ -20,24 +20,27 @@ public class DeleteTask extends Task{
         public void run() {
             DeleteMessage deleteMessage = (DeleteMessage) message;
 
-            try {
-                if (peer.getPeerStorage().hasStoredFile(deleteMessage.getFileId())) {
-                    OkMessage okay = new OkMessage(peer.getSelfReference());
-                    try{
-                        peer.getPeerStorage().deleteFile(peer, deleteMessage.getFileId());
-                        peer.sendMessage(socket, okay);
-                    }catch(Exception e){
-                        ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTDELETED");
-                        peer.sendMessage(socket, error);
-                    }
-                }
-                else {
-                    ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTFOUND");
+        try {
+            StorageFile storageFile = peer.getNodeStorage().getStoredFile(deleteMessage.getFileId());
+            if (storageFile != null) {
+                try {
+                    System.out.println("HERE1");
+                    OkMessage okay = new OkMessage(peer.getSelfReference(), Integer.toString(storageFile.getKey()));
+                    System.out.println("HERE2");
+                    peer.getNodeStorage().deleteStoredFile(deleteMessage.getFileId());
+
+                    peer.sendMessage(socket, okay);
+                } catch (Exception e) {
+                    ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTDELETED");
                     peer.sendMessage(socket, error);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTFOUND");
+                peer.sendMessage(socket, error);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+}
 

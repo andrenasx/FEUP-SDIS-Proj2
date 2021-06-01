@@ -1,5 +1,7 @@
 package peer.storage;
 
+import peer.Peer;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -125,10 +127,11 @@ public class NodeStorage implements Serializable {
         return Files.readAllBytes(file.toPath());
     }
 
-    public void deleteFile(Peer peer, String fileId){
-        StorageFile storageFile = this.storedFiles.get(fileId);
-        File file = new File("../PeerStorage/Peer" + peer.getSelfReference().getGuid()+ "/" + storageFile.getFileId());
-        file.delete();
+    public void deleteStoredFile(String fileId) throws IOException {
+        System.out.println("DELETE STORED FILE" + fileId);
+        Files.deleteIfExists(Paths.get(this.getStoragePath() + fileId));
+        System.out.println("before remove stored file");
+        this.removeStoredFile(fileId);
     }
 
     @Override
