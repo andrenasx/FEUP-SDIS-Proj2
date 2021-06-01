@@ -114,13 +114,11 @@ public class PeerStorage implements Serializable {
 
         sb.append("---Stored Files---\n");
         for (StorageFile storageFile : this.storedFiles.values()) {
-            sb.append(storageFile).append("\n");
             sb.append(storageFile.liteString()).append("\n");
         }
 
         sb.append("---Sent Files---\n");
         for (StorageFile storageFile : this.sentFiles.values()) {
-            sb.append(storageFile).append("\n");
             sb.append(storageFile.liteString()).append("\n");
         }
 

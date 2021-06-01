@@ -196,7 +196,7 @@ public class Peer extends ChordNode implements PeerInit {
 
     @Override
     public String state() throws RemoteException {
-        return "\nChord State\n" + this.chordState() + "\nSTORAGE\n" + this.peerStorage.toString();
+        return "\nChord State\n" + this.chordState() + "\nSTORAGE\n" + this.peerStorage;
 
     }
 
