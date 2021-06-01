@@ -2,6 +2,10 @@ sh ./scripts/compile.sh
 
 cd build
 
+killall rmiregistry
+
+sleep 2
+
 rmiregistry &
 
 gnome-terminal -- sh ../scripts/peer.sh peer1 127.0.0.1 8001 -b

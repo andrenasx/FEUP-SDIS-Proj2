@@ -27,7 +27,7 @@ public class ChordNode extends SSLSocketPeer {
     private ChordNodeReference bootPeer;
     private ChordNodeReference predecessor;
     private ChordNodeReference[] routingTable = new ChordNodeReference[Utils.CHORD_M];
-    private ChordNodeReference[] successorsList = new ChordNodeReference[3];
+    private ChordNodeReference[] successorsList = new ChordNodeReference[Utils.CHORD_R];
     private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
     private NodeStorage nodeStorage;
     private int next = 1;
@@ -259,8 +259,8 @@ public class ChordNode extends SSLSocketPeer {
             //System.out.println("Client wrote: " + request);
             this.sendClientMessage(successor.getSocketAddress(), request);
         } catch (Exception e) {
-            System.out.println("[ERROR-CHORD] Could not send notify to Peer");
-            e.printStackTrace();
+            System.out.println("[ERROR-CHORD] Could not send notify to successor Peer");
+            //e.printStackTrace();
         }
     }
 
@@ -285,7 +285,7 @@ public class ChordNode extends SSLSocketPeer {
             try {
                 this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);
             } catch (Exception e) {
-                System.err.println("Couldn't connect to predecessor");
+                System.err.println("[ERROR-CHORD] Could not connect to predecessor");
                 this.predecessor = null;
             }
         }

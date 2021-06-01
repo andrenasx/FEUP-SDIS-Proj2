@@ -8,9 +8,8 @@ import java.security.NoSuchAlgorithmException;
 
 public abstract class Utils {
     public static final int CHORD_M = 8;
+    public static final int CHORD_R = 3;
     public static final int CHORD_MAX_PEERS = (int) Math.pow(2, Utils.CHORD_M);
-    public static final int CHUNK_SIZE = 10240;
-    public static final int TLS_CHUNK_SIZE = 10269;
 
     public static int generateId(InetSocketAddress socketAddress) {
         String toHash = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
