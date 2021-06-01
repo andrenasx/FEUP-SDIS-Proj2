@@ -128,7 +128,7 @@ public class ChordNode extends SSLSocketPeer {
 
             for (StorageFile delegatedFile: copyKeysReplyMessage.getDelegatedFiles()) {
                 GetFileMessage getFileMessage = new GetFileMessage(this.getSuccessor(), delegatedFile.getFileId());
-                if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), delegatedFile.getFilePath())) {
+                if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
                     System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
                     return false;
                 }
@@ -145,7 +145,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public ChordNodeReference findSuccessor(int guid) {
-        System.out.println("\n\n[CHORD] Finding successor..." + guid);
+        System.out.println("\n\n[CHORD] Finding successor...");
         //System.out.println(getSuccessor());
 
         if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
