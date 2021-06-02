@@ -2,7 +2,7 @@ argc=$#
 
 if [ $argc -lt 2 ]
 then
-	echo "Usage: $0 <peer_ap> BACKUP|RESTORE|DELETE|RECLAIM|STATE [<opnd_1> [<optnd_2]]"
+	echo "Usage: $0 <peer_ap> BACKUP|RESTORE|DELETE|RECLAIM|STATE|SHUTDOWN [<opnd_1> [<optnd_2]]"
 	exit 1
 fi
 
@@ -58,8 +58,17 @@ STATE)
 	opernd_1=""
 	rep_deg=""
 	;;
+SHUTDOWN)
+	if [ $argc -ne 2 ]
+	then
+		echo "Usage: $0 <peer_app> SHUTDOWN"
+		exit 1
+	fi
+	opernd_1=""
+	rep_deg=""
+	;;
 *)
-	echo "Usage: $0 <peer_ap> BACKUP|RESTORE|DELETE|RECLAIM|STATE [<opnd_1> [<optnd_2]]"
+	echo "Usage: $0 <peer_ap> BACKUP|RESTORE|DELETE|RECLAIM|STATE|SHUTDOWN [<opnd_1> [<optnd_2]]"
 	exit 1
 	;;
 esac

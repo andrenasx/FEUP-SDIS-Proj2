@@ -84,21 +84,14 @@ public class Peer extends ChordNode implements PeerInit {
         // Start thread to save peer state every minute
         this.scheduler.scheduleAtFixedRate(new Thread(this.getNodeStorage()::saveState), 1, 1, TimeUnit.MINUTES);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownSafely));
         System.out.println("[PEER] Peer inited successfully");
     }
 
-    public void shutdown() {
+    public void shutdownPeer() {
         super.shutdownNode();
         this.scheduler.shutdown();
         System.out.println("[PEER] Peer shutdown successfully");
     }
-
-    public void shutdownSafely() {
-        super.shutdownSafely();
-        this.shutdown();
-    }
-
 
     @Override
     public void backup(String filepath, int replicationDegree) {
@@ -292,6 +285,13 @@ public class Peer extends ChordNode implements PeerInit {
     @Override
     public String state() throws RemoteException {
         return "\nChord State\n" + this.chordState() + "\nSTORAGE\n" + this.getNodeStorage();
+    }
+
+    @Override
+    public String shutdown() {
+        super.shutdownSafely();
+        this.shutdownPeer();
+        return "Peer " + this.getSelfReference().getGuid() + " shutdown successfully";
     }
 
     public String backupFile(BackupMessage message, ChordNodeReference storingNode, StorageFile storageFile) {

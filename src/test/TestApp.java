@@ -77,6 +77,16 @@ public class TestApp {
 
                     break;
                 }
+                case "SHUTDOWN": {
+                    if (args.length != 2) {
+                        System.out.println("Usage: java TestApp <peer_ap> STATE");
+                        return;
+                    }
+
+                    System.out.println(peer.shutdown());
+
+                    break;
+                }
                 default:
                     throw new Exception("Unknown protocol");
             }

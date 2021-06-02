@@ -91,7 +91,7 @@ public class ChordNode extends SSLSocketPeer {
             CopyKeysReplyMessage copyKeysReplyMessage = (CopyKeysReplyMessage) this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), copyKeysMessage);
 
             int num_files = copyKeysReplyMessage.getDelegatedFiles().size();
-            System.out.println("[COPY] Receiving " + num_files + " delegated files from sucessor " + this.getSuccessor().getGuid());
+            System.out.println("[COPY] Receiving " + num_files + " delegated files from sucessor " + this.getSuccessor());
 
             if (num_files > 0) {
                 List<Future<Boolean>> files = new ArrayList<>();
@@ -148,7 +148,7 @@ public class ChordNode extends SSLSocketPeer {
 
             return response.getNode();
         } catch (Exception e) {
-            System.out.println("[ERROR-CHORD] Could not exchange messages");
+            System.out.println("[ERROR-CHORD] Could not exchange messages with " + closest);
             return self;
         }
     }
@@ -167,7 +167,7 @@ public class ChordNode extends SSLSocketPeer {
                 success = true;
 
             } catch (Exception e) {
-                System.out.println("[ERROR-CHORD] Successor down");
+                System.out.println("[ERROR-CHORD] Successor down " + getSuccessor());
                 nextSuccessor++;
                 if (nextSuccessor == 3) return;
                 setSuccessor(this.successorsList[nextSuccessor]);
@@ -188,7 +188,7 @@ public class ChordNode extends SSLSocketPeer {
                 notify(getSuccessor());
 
         } catch (Exception e) {
-            System.out.println("[ERROR-CHORD] Could not exchange messages");
+            System.out.println("[ERROR-CHORD] Could not exchange messages with" + getSuccessor());
         }
     }
 
@@ -198,7 +198,7 @@ public class ChordNode extends SSLSocketPeer {
 
             this.sendClientMessage(successor.getSocketAddress(), request);
         } catch (Exception e) {
-            System.out.println("[ERROR-CHORD] Could not send notify to successor Peer");
+            System.out.println("[ERROR-CHORD] Could not send notify to successor " + successor);
         }
     }
 
@@ -219,7 +219,7 @@ public class ChordNode extends SSLSocketPeer {
             try {
                 this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);
             } catch (Exception e) {
-                System.err.println("[ERROR-CHORD] Could not connect to predecessor");
+                System.err.println("[ERROR-CHORD] Could not connect to predecessor " + this.predecessor);
                 this.predecessor = null;
             }
         }
@@ -318,20 +318,24 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public void shutdownSafely() {
-        try {
-            AlertPredecessorMessage alertPredecessorMessage = new AlertPredecessorMessage(this.self, this.getSuccessorsList());
-            this.sendClientMessage(this.getSuccessor().getSocketAddress(), alertPredecessorMessage);
-        } catch (Exception e) {
-            System.out.println("[CHORD] Failed sending alert message to predecessor");
-            e.printStackTrace();
+        if(this.getPredecessor() != null) {
+            try {
+                AlertPredecessorMessage alertPredecessorMessage = new AlertPredecessorMessage(this.self, this.getSuccessorsList());
+                this.sendClientMessage(this.getPredecessor().getSocketAddress(), alertPredecessorMessage);
+            } catch (Exception e) {
+                System.out.println("[CHORD] Failed sending alert message to predecessor " + this.getPredecessor());
+                //e.printStackTrace();
+            }
         }
 
-        try {
-            AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
-            this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);
-        } catch (Exception e) {
-            System.out.println("[CHORD] Failed sending alert message to successor");
-            e.printStackTrace();
+        if(this.getSuccessor().getGuid() != this.getSelfReference().getGuid()) {
+            try {
+                AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
+                this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);
+            } catch (Exception e) {
+                System.out.println("[CHORD] Failed sending alert message to successor " + this.getSuccessor());
+                //e.printStackTrace();
+            }
         }
     }
 }

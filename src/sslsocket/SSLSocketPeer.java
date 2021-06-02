@@ -53,13 +53,14 @@ public class SSLSocketPeer implements Runnable {
                 // Submit task
                 this.sslScheduler.execute(message.getTask((Peer) this, socket));
             } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
     }
 
     public void stop() {
         this.active = false;
+        this.sslScheduler.shutdown();
         try {
             this.serverSocket.close();
             System.out.println("[SSLSocket] Server close successfully");
