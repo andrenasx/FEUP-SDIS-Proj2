@@ -34,11 +34,6 @@ public class ChordNodeReference implements Serializable {
         this.guid = guid;
     }
 
-    public String liteString() {
-        return "{guid=" + guid +
-                ", address=" + address + '}';
-    }
-
     @Override
     public String toString() {
         return "ChordNodeReference{" +

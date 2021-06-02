@@ -89,26 +89,14 @@ public class StorageFile implements Serializable {
         return this.storingKeys.size();
     }
 
-
-    public String liteString() {
+    @Override
+    public String toString() {
         return "{filename=" + filePath +
                 ", fileId=" + fileId +
-                ", owner=" + owner.liteString() +
-                ", size=" + size + " B" +
+                ", owner=" + owner +
+                ", size=" + Utils.covertSize(size) +
                 ", replicationDegree=" + desiredRepDegree +
                 ", storingKeys=" +
                 "}";
-    }
-
-
-    @Override
-    public String toString() {
-        return "StorageFile{" +
-                "fileId=" + fileId +
-                ", filename=" + filePath +
-                ", owner=" + owner +
-                ", size=" + size +
-                ", replicationDegree=" + desiredRepDegree +
-                '}';
     }
 }

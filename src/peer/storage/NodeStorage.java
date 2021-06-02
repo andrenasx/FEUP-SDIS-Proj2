@@ -160,18 +160,18 @@ public class NodeStorage implements Serializable {
 
         sb.append("---Stored Files---\n");
         for (StorageFile storageFile : this.storedFiles.values()) {
-            sb.append(storageFile.liteString()).append("\n");
+            sb.append(storageFile).append("\n");
         }
 
         sb.append("---Sent Files---\n");
         for (StorageFile storageFile : this.sentFiles.values()) {
-            sb.append(storageFile.liteString()).append("\n");
+            sb.append(storageFile).append("\n");
         }
 
 
         sb.append("\n---Storage---\n")
-                .append("Maximum capacity: ").append(this.storageCapacity / 1000.0).append(" KBytes\n")
-                .append("Occupied space: ").append(this.occupiedSpace / 1000.0).append(" KBytes\n");
+                .append("Maximum capacity: ").append(Utils.convertSize(this.storageCapacity))
+                .append("Occupied space: ").append(Utils.convertSize(this.occupiedSpace));
 
         return sb.toString();
     }
