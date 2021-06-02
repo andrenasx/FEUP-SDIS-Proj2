@@ -15,7 +15,7 @@ public class NodeStorage implements Serializable {
     private final String storagePath;
 
     public NodeStorage(int id) {
-        this.storageCapacity = 100000000; // 100 MBytes
+        this.storageCapacity = 104857600; // 100 MBytes
         this.occupiedSpace = 0;
         this.sentFiles = new ConcurrentHashMap<>();
         this.storedFiles = new ConcurrentHashMap<>();
@@ -131,6 +131,10 @@ public class NodeStorage implements Serializable {
 
     public double getStorageCapacity() {
         return storageCapacity;
+    }
+
+    public String printStorageCapacity() {
+        return Utils.convertSize(this.storageCapacity);
     }
 
     public double getOccupiedSpace() {

@@ -280,7 +280,7 @@ public class Peer extends ChordNode implements PeerInit {
             if (this.getNodeStorage().getOccupiedSpace() <= diskspace) break;
         }
 
-        System.out.println("[RECLAIM] Finished. New capacity: " + this.getNodeStorage().getStorageCapacity());
+        System.out.println("[RECLAIM] Finished. New capacity: " + this.getNodeStorage().printStorageCapacity());
     }
 
     @Override
