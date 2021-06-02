@@ -91,6 +91,7 @@ public class Peer extends ChordNode implements PeerInit {
         super.shutdownNode();
         this.scheduler.shutdown();
         System.out.println("[PEER] Peer shutdown successfully");
+        System.exit(0);
     }
 
     @Override
