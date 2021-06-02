@@ -4,7 +4,7 @@ import messages.protocol.DeleteMessage;
 import messages.protocol.ErrorMessage;
 import messages.protocol.OkMessage;
 import peer.Peer;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
@@ -36,7 +36,7 @@ public class DeleteTask extends Task {
             }
             else {
                 // Don't have file, send error message
-                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTFOUND");
+                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOFILE");
                 peer.sendMessage(socket, error);
                 System.err.println("[ERROR-DELETE] File not found. FileId=" + deleteMessage.getFileId());
             }

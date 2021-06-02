@@ -7,10 +7,10 @@ import java.rmi.registry.Registry;
 
 public class TestApp {
     public static void main(String[] args) {
-        /*if (args.length < 2 || args.length > 4) {
-            System.out.println("Usage: java TestApp <peer_ap> <sub_protocol> <opnd_1> <opnd_2>");
+        if (args.length < 2 || args.length > 4) {
+            System.out.println("Usage: java TestApp <peer_ap> <protocol> <opnd_1> <opnd_2>");
             return;
-        }*/
+        }
 
         String serviceAccessPoint = args[0];
         String protocol = args[1].toUpperCase();

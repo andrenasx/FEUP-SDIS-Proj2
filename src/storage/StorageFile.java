@@ -1,4 +1,4 @@
-package peer.storage;
+package storage;
 
 import chord.ChordNodeReference;
 import utils.Utils;

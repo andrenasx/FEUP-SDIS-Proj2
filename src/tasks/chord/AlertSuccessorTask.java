@@ -1,17 +1,15 @@
 package tasks.chord;
 
 import messages.chord.AlertSuccessorMessage;
-import messages.chord.LookupReplyMessage;
 import messages.protocol.OkMessage;
 import peer.Peer;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class AlertSuccessorTask extends Task {

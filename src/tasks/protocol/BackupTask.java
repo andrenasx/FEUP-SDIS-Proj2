@@ -22,7 +22,7 @@ public class BackupTask extends Task {
         try {
             // Check if this peer already stored this file, send error
             if (peer.getNodeStorage().hasStoredFile(backupMessage.getStorageFile().getFileId())) {
-                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "HAVEFILE");
+                ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "HAVE");
                 peer.sendMessage(socket, error);
                 System.out.println("[ERROR-BACKUP] Already have file " + backupMessage.getStorageFile().getFilePath() + " backed up");
             }

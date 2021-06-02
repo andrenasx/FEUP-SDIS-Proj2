@@ -3,7 +3,7 @@ package tasks.protocol;
 import messages.protocol.CopyKeysMessage;
 import messages.protocol.CopyKeysReplyMessage;
 import peer.Peer;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;

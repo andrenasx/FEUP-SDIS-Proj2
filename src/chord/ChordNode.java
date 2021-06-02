@@ -1,11 +1,10 @@
 package chord;
 
-import messages.Message;
 import messages.chord.*;
 import messages.protocol.*;
 import peer.Peer;
-import peer.storage.NodeStorage;
-import peer.storage.StorageFile;
+import storage.NodeStorage;
+import storage.StorageFile;
 import sslsocket.SSLSocketPeer;
 import utils.Utils;
 
@@ -318,7 +317,7 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public void shutdownSafely() {
-        if(this.getPredecessor() != null) {
+        if (this.getPredecessor() != null) {
             try {
                 AlertPredecessorMessage alertPredecessorMessage = new AlertPredecessorMessage(this.self, this.getSuccessorsList());
                 this.sendClientMessage(this.getPredecessor().getSocketAddress(), alertPredecessorMessage);
@@ -328,7 +327,7 @@ public class ChordNode extends SSLSocketPeer {
             }
         }
 
-        if(this.getSuccessor().getGuid() != this.getSelfReference().getGuid()) {
+        if (this.getSuccessor().getGuid() != this.getSelfReference().getGuid()) {
             try {
                 AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
                 this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);

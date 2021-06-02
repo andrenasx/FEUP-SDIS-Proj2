@@ -4,7 +4,7 @@ import chord.ChordNodeReference;
 import messages.protocol.BackupMessage;
 import messages.protocol.RemovedMessage;
 import peer.Peer;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import tasks.Task;
 import utils.Utils;
 

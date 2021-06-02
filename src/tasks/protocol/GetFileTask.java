@@ -4,7 +4,7 @@ import messages.protocol.ErrorMessage;
 import messages.protocol.FileMessage;
 import messages.protocol.GetFileMessage;
 import peer.Peer;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;

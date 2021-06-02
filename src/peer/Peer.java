@@ -4,7 +4,7 @@ import chord.ChordNode;
 import chord.ChordNodeReference;
 import messages.Message;
 import messages.protocol.*;
-import peer.storage.StorageFile;
+import storage.StorageFile;
 import utils.Utils;
 
 import java.io.File;
@@ -102,8 +102,6 @@ public class Peer extends ChordNode implements PeerInit {
             return;
         }
 
-        System.out.println("[BACKUP] Starting backup for " + filepath);
-
         BasicFileAttributes attr;
         try {
             attr = Files.readAttributes(Paths.get(filepath), BasicFileAttributes.class);
@@ -112,9 +110,7 @@ public class Peer extends ChordNode implements PeerInit {
             return;
         }
 
-        // Generate unique file id
-        String fileId = Utils.generateHashForFile(filepath, attr);
-        double fileSize = attr.size();
+        System.out.println("[BACKUP] Starting backup for " + filepath);
 
         // Generate random keys, used to store the file
         final int[] keys = new Random().ints(0, Utils.CHORD_MAX_PEERS).distinct().limit(replicationDegree * 4L).toArray();
@@ -141,6 +137,10 @@ public class Peer extends ChordNode implements PeerInit {
             sb.append(key).append("; ");
         }
         System.out.println(sb);
+
+        // Generate unique file id
+        String fileId = Utils.generateHashForFile(filepath, attr);
+        double fileSize = attr.size();
 
         // Create StorageFile instance with file information
         StorageFile sentFile = new StorageFile(-1, this.getSelfReference(), fileId, filepath, fileSize, replicationDegree);
@@ -215,7 +215,7 @@ public class Peer extends ChordNode implements PeerInit {
         // Verify if file exists in sent files
         StorageFile sentFile = this.getNodeStorage().getSentFile(filepath);
         if (sentFile == null) {
-            System.err.println("[DELETE-ERROR] Did not backup " + filepath);
+            System.err.println("[ERROR-DELETE] Did not backup " + filepath);
             return;
         }
 
@@ -295,41 +295,41 @@ public class Peer extends ChordNode implements PeerInit {
         return "Peer " + this.getSelfReference().getGuid() + " shutdown successfully";
     }
 
-    public String backupFile(BackupMessage message, ChordNodeReference storingNode, StorageFile storageFile) {
+    public String backupFile(BackupMessage message, ChordNodeReference targetNode, StorageFile storageFile) {
         // Send backup message and process the response
         try {
-            Message response = this.sendAndReceiveMessage(storingNode.getSocketAddress(), message);
+            Message response = this.sendAndReceiveMessage(targetNode.getSocketAddress(), message);
 
             if (response instanceof OkMessage) {
                 // Backup successful, add this file key to our sent file storing keys
                 storageFile.addStoringKey(message.getStorageFile().getKey());
-                return "[BACKUP] Successful backup on file " + storageFile.getFilePath() + " for peer " + storingNode.getGuid();
+                return "[BACKUP] Successful backup on file " + storageFile.getFilePath() + " for peer " + targetNode.getGuid();
             }
             else if (response instanceof ErrorMessage) {
                 if (((ErrorMessage) response).getError().equals("FULL")) {
                     // Peer doesn't have space to store this file
-                    return "[ERROR-BACKUP] Peer " + storingNode.getGuid() + " does not have enough space to store the file";
+                    return "[ERROR-BACKUP] Peer " + targetNode.getGuid() + " does not have enough space to store the file";
                 }
-                else if (((ErrorMessage) response).getError().equals("HAVEFILE")) {
+                else if (((ErrorMessage) response).getError().equals("HAVE")) {
                     // Peer already had this file backed up
-                    return "[ERROR-BACKUP] Peer " + storingNode.getGuid() + " already has requested file backed up";
+                    return "[ERROR-BACKUP] Peer " + targetNode.getGuid() + " already has requested file backed up";
                 }
 
-                return "[ERROR-BACKUP] Received unexpected error from Peer " + storingNode.getGuid();
+                return "[ERROR-BACKUP] Received unexpected error from Peer " + targetNode.getGuid();
             }
             else {
-                return "[ERROR-BACKUP] Received unexpected reply from Peer " + storingNode.getGuid();
+                return "[ERROR-BACKUP] Received unexpected reply from Peer " + targetNode.getGuid();
             }
         } catch (Exception e) {
             System.err.println("[ERROR-BACKUP] Couldn't backup file " + storageFile.getFilePath());
-            return "[ERROR-BACKUP] Failed backup on file " + storageFile.getFilePath() + " on peer " + storingNode.getGuid();
+            return "[ERROR-BACKUP] Failed backup on file " + storageFile.getFilePath() + " on peer " + targetNode.getGuid();
         }
     }
 
-    public boolean restoreFile(GetFileMessage message, ChordNodeReference storingNode, String restoreFilePath) {
+    public boolean restoreFile(GetFileMessage message, ChordNodeReference targetNode, String restoreFilePath) {
         // Send restore message and process the response
         try {
-            Message response = this.sendAndReceiveMessage(storingNode.getSocketAddress(), message);
+            Message response = this.sendAndReceiveMessage(targetNode.getSocketAddress(), message);
 
             if (response instanceof FileMessage) {
                 // Received file message, save file
@@ -337,10 +337,10 @@ public class Peer extends ChordNode implements PeerInit {
                 return true;
             }
             else if (response instanceof ErrorMessage) {
-                System.out.println("[ERROR-RESTORE] Received error from Peer " + storingNode.getGuid());
+                System.out.println("[ERROR-RESTORE] Received error from Peer " + targetNode.getGuid());
             }
             else {
-                System.out.println("[ERROR-RESTORE] Received unexpected reply from Peer " + storingNode.getGuid());
+                System.out.println("[ERROR-RESTORE] Received unexpected reply from Peer " + targetNode.getGuid());
             }
         } catch (Exception e) {
             System.err.println("[ERROR-RESTORE] Couldn't restore file");
@@ -350,20 +350,20 @@ public class Peer extends ChordNode implements PeerInit {
         return false;
     }
 
-    public String deleteFile(DeleteMessage message, ChordNodeReference storingNode, StorageFile storageFile) {
-        return this.deleteFile(message, storingNode, storageFile, false);
+    public String deleteFile(DeleteMessage message, ChordNodeReference targetNode, StorageFile storageFile) {
+        return this.deleteFile(message, targetNode, storageFile, false);
     }
 
-    public String deleteFile(DeleteMessage message, ChordNodeReference storingNode, StorageFile storageFile, boolean chord) {
+    public String deleteFile(DeleteMessage message, ChordNodeReference storingNode, StorageFile targetNode, boolean chord) {
         // Send delete message and process the response
         try {
             Message response = this.sendAndReceiveMessage(storingNode.getSocketAddress(), message);
 
             if (response instanceof OkMessage) {
                 // if it is a delete done by protocol remove storing key from our sent file
-                if (!chord) storageFile.removeStoringKey(Integer.parseInt(((OkMessage) response).getBody()));
+                if (!chord) targetNode.removeStoringKey(Integer.parseInt(((OkMessage) response).getBody()));
 
-                return "[DELETE] Successful delete file " + storageFile.getFilePath() + " for peer " + storingNode.getGuid();
+                return "[DELETE] Successful delete file " + targetNode.getFilePath() + " for peer " + storingNode.getGuid();
             }
             else if (response instanceof ErrorMessage) {
                 return "[ERROR-DELETE] Peer " + storingNode.getGuid() + " failed to delete file";
@@ -372,8 +372,8 @@ public class Peer extends ChordNode implements PeerInit {
                 return "[ERROR-DELETE] Received unexpected reply from Peer " + storingNode.getGuid();
             }
         } catch (Exception e) {
-            System.err.println("[ERROR-DELETE] Couldn't delete file " + storageFile.getFilePath());
-            return "[ERROR-DELETE] Failed delete on file " + storageFile.getFilePath() + " on peer " + storingNode.getGuid();
+            System.err.println("[ERROR-DELETE] Couldn't delete file " + targetNode.getFilePath());
+            return "[ERROR-DELETE] Failed delete on file " + targetNode.getFilePath() + " on peer " + storingNode.getGuid();
         }
     }
 
