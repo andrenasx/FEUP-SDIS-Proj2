@@ -156,24 +156,24 @@ public class NodeStorage implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        String sb = "";
 
 
-        sb.append("---Sent Files---\n");
+        sb+="---Sent Files---\n";
         for (StorageFile storageFile : this.sentFiles.values()) {
-            sb.append(storageFile).append("\n");
+            sb+=storageFile + "\n";
         }
-        sb.append("\n---Stored Files---\n");
+        sb+="\n---Stored Files---\n";
         for (StorageFile storageFile : this.storedFiles.values()) {
-            sb.append(storageFile).append("\n");
+            sb+=(storageFile.toString()).substring(0, storageFile.toString().length()-16) + "}\n";
         }
 
 
 
 
-        sb.append("\n---Storage---\n")
-                .append("Maximum capacity: ").append(Utils.convertSize(this.storageCapacity)).append("\n")
-                .append("Occupied space: ").append(Utils.convertSize(this.occupiedSpace));
+        sb+="\n---Storage---\n"
+               +"Maximum capacity: "+Utils.convertSize(this.storageCapacity)+"\n"
+                +"Occupied space: "+Utils.convertSize(this.occupiedSpace);
 
         return sb.toString();
     }

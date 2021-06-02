@@ -15,7 +15,7 @@ public class StorageFile implements Serializable {
     private String filePath;
     private double size;
     private int desiredRepDegree;
-    private final Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> storingKeys;
 
     public StorageFile(int key, ChordNodeReference owner, String fileId, String filePath, double size, int desiredRepDegree) {
         this.key = key;
@@ -24,6 +24,7 @@ public class StorageFile implements Serializable {
         this.filePath = filePath;
         this.size = size;
         this.desiredRepDegree = desiredRepDegree;
+        this.storingKeys = ConcurrentHashMap.newKeySet();
     }
 
     public int getKey() {
@@ -92,12 +93,18 @@ public class StorageFile implements Serializable {
 
     @Override
     public String toString() {
-        return "File{filename=" + filePath +
-                ", fileId=" + fileId +
-                ", owner=" + owner +
-                ", size=" + Utils.convertSize(size) +
-                ", replicationDegree=" + desiredRepDegree +
-                ", storingKeys=" +
-                "}";
+        String temp="File{key= "+key+
+                ", filename= " + filePath +
+                ", fileId= " + fileId +
+                ", owner= " + owner +
+                ", size= " + Utils.convertSize(size) +
+                ", replicationDegree= " + desiredRepDegree +
+                ", storingKeys= {";
+        for (Integer i:storingKeys) {
+            temp +=i+", ";
+        }
+        temp=temp.substring(0, temp.length()-2);
+        temp+="}}";
+        return  temp;
     }
 }
