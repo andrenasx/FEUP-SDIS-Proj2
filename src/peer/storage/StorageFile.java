@@ -92,7 +92,7 @@ public class StorageFile implements Serializable {
 
     @Override
     public String toString() {
-        return "{filename=" + filePath +
+        return "File{filename=" + filePath +
                 ", fileId=" + fileId +
                 ", owner=" + owner +
                 ", size=" + Utils.convertSize(size) +
