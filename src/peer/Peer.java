@@ -94,6 +94,11 @@ public class Peer extends ChordNode implements PeerInit {
         System.out.println("[PEER] Peer shutdown successfully");
     }
 
+    public void shutdownSafely() {
+        super.shutdownSafely();
+        this.shutdown();
+    }
+
 
     @Override
     public void backup(String filepath, int replicationDegree) {

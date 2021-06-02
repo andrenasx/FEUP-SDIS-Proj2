@@ -33,6 +33,7 @@ public class SSLSocketPeer implements Runnable {
 
         SSLServerSocketFactory factory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
         serverSocket = (SSLServerSocket) factory.createServerSocket(socketAddress.getPort());
+        serverSocket.setNeedClientAuth(true);
         serverSocket.setEnabledCipherSuites(factory.getDefaultCipherSuites());
         this.active = true;
         new Thread(this).start();

@@ -8,7 +8,6 @@ import tasks.protocol.DeleteTask;
 import javax.net.ssl.SSLSocket;
 
 public class DeleteMessage extends Message {
-
     private final String fileId;
 
     public DeleteMessage(ChordNodeReference senderReference, String fileId) {

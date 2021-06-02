@@ -95,7 +95,7 @@ public class StorageFile implements Serializable {
         return "{filename=" + filePath +
                 ", fileId=" + fileId +
                 ", owner=" + owner +
-                ", size=" + Utils.covertSize(size) +
+                ", size=" + Utils.convertSize(size) +
                 ", replicationDegree=" + desiredRepDegree +
                 ", storingKeys=" +
                 "}";
