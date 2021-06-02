@@ -19,7 +19,7 @@ public class AlertSuccessorTask extends Task {
 
         peer.setPredecessor(alert.getPredecessor());
         for (StorageFile file : alert.getDelegatedFiles()) {
-            peer.getScheduler().submit(() -> peer.restoreDelegatedFile(file));
+            peer.getScheduler().submit(() -> peer.storeDelegatedFile(file));
         }
     }
 }

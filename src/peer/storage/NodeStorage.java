@@ -89,6 +89,10 @@ public class NodeStorage implements Serializable {
         return this.sentFiles.get(filename);
     }
 
+    public ConcurrentHashMap<String, StorageFile> getSentFiles()  {
+        return this.sentFiles;
+    }
+
     public StorageFile getStoredFile(String fileId) {
         return this.storedFiles.get(fileId);
     }

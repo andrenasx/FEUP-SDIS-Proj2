@@ -16,13 +16,13 @@ public class StorageFile implements Serializable {
     private int desiredRepDegree;
     private final Set<Integer> storingKeys = ConcurrentHashMap.newKeySet();
 
-    public StorageFile(int key, ChordNodeReference owner, String fileId, String filePath, long size, int replicationDegree) {
+    public StorageFile(int key, ChordNodeReference owner, String fileId, String filePath, double size, int desiredRepDegree) {
         this.key = key;
         this.fileId = fileId;
         this.owner = owner;
         this.filePath = filePath;
         this.size = size;
-        this.desiredRepDegree = replicationDegree;
+        this.desiredRepDegree = desiredRepDegree;
     }
 
     public int getKey() {
@@ -77,12 +77,16 @@ public class StorageFile implements Serializable {
         this.size = size;
     }
 
-    public int getReplicationDegree() {
+    public int getDesiredReplicationDegree() {
         return desiredRepDegree;
     }
 
-    public void setReplicationDegree(int replicationDegree) {
+    public void setDesiredReplicationDegree(int replicationDegree) {
         this.desiredRepDegree = replicationDegree;
+    }
+
+    public int getRealDesiredReplicationDegree() {
+        return this.storingKeys.size();
     }
 
 
