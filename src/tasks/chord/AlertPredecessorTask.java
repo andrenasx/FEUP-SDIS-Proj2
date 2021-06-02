@@ -1,10 +1,12 @@
 package tasks.chord;
 
+import chord.ChordNodeReference;
 import messages.chord.AlertPredecessorMessage;
 import peer.Peer;
 import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
+import java.util.Arrays;
 
 public class AlertPredecessorTask extends Task {
     public AlertPredecessorTask(AlertPredecessorMessage message, Peer peer, SSLSocket socket) {
@@ -13,6 +15,8 @@ public class AlertPredecessorTask extends Task {
 
     @Override
     public void run() {
-        this.peer.setSuccessorsList(((AlertPredecessorMessage) message).getSuccessorsList());
+        ChordNodeReference[] successorsList = ((AlertPredecessorMessage) message).getSuccessorsList();
+        this.peer.setSuccessorsList(successorsList);
+        this.peer.setSuccessor(successorsList[0]);
     }
 }

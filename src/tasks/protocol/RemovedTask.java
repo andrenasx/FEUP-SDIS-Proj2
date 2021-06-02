@@ -46,7 +46,6 @@ public class RemovedTask extends Task {
             return;
         }
 
-
         sentFile.removeStoringKey(fileKey);
         System.out.println("[RECLAIM] Removed stored key " + fileKey + " for file " + sentFile.getFilePath());
 

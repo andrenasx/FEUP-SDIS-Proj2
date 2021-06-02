@@ -17,7 +17,7 @@ public class AlertPredecessorMessage extends Message {
 
     @Override
     public AlertPredecessorTask getTask(Peer peer, SSLSocket socket) {
-        return null;
+        return new AlertPredecessorTask(this, peer, socket);
     }
 
     public ChordNodeReference[] getSuccessorsList() {

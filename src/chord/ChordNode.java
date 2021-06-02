@@ -1,10 +1,8 @@
 package chord;
 
+import messages.Message;
 import messages.chord.*;
-import messages.protocol.CopyKeysMessage;
-import messages.protocol.CopyKeysReplyMessage;
-import messages.protocol.DeleteMessage;
-import messages.protocol.GetFileMessage;
+import messages.protocol.*;
 import peer.Peer;
 import peer.storage.NodeStorage;
 import peer.storage.StorageFile;
@@ -98,7 +96,7 @@ public class ChordNode extends SSLSocketPeer {
             if (num_files > 0) {
                 List<Future<Boolean>> files = new ArrayList<>();
                 for (StorageFile delegatedFile : copyKeysReplyMessage.getDelegatedFiles()) {
-                    files.add(((Peer) this).getScheduler().submit(() -> storeDelegatedFile(delegatedFile)));
+                    files.add(((Peer) this).getScheduler().submit(() -> storeDelegatedFile(delegatedFile, this.getSuccessor())));
                 }
 
                 for (Future<Boolean> result : files) {
@@ -116,17 +114,16 @@ public class ChordNode extends SSLSocketPeer {
         return true;
     }
 
-    public boolean storeDelegatedFile(StorageFile delegatedFile) {
+    public boolean storeDelegatedFile(StorageFile delegatedFile, ChordNodeReference targetNode) {
         GetFileMessage getFileMessage = new GetFileMessage(this.getSelfReference(), delegatedFile.getFileId());
-        if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
-            System.err.println("[ERROR-COPY] Couldn't restore delegated file " + delegatedFile.getFilePath());
-            return false;
+        if (!((Peer) this).restoreFile(getFileMessage, targetNode, this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
+            System.err.println("[ERROR-COPY] Couldn't restore " + delegatedFile.getFilePath());
         }
 
         System.out.println("[COPY] Successfully stored delegated file " + delegatedFile.getFilePath());
 
-        DeleteMessage deleteMessage = new DeleteMessage(this.getSuccessor(), delegatedFile.getFileId());
-        ((Peer) this).deleteFile(deleteMessage, this.getSuccessor(), delegatedFile, true);
+        DeleteMessage deleteMessage = new DeleteMessage(targetNode, delegatedFile.getFileId());
+        ((Peer) this).deleteFile(deleteMessage, targetNode, delegatedFile, true);
 
         this.nodeStorage.addStoredFile(delegatedFile);
         return true;
@@ -322,18 +319,18 @@ public class ChordNode extends SSLSocketPeer {
 
     public void shutdownSafely() {
         try {
-            AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
-            this.sendClientMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);
-        } catch (Exception e) {
-            System.out.println("[CHORD] Failed sending alert message to successor");
-            e.printStackTrace();
-        }
-
-        try {
             AlertPredecessorMessage alertPredecessorMessage = new AlertPredecessorMessage(this.self, this.getSuccessorsList());
             this.sendClientMessage(this.getSuccessor().getSocketAddress(), alertPredecessorMessage);
         } catch (Exception e) {
             System.out.println("[CHORD] Failed sending alert message to predecessor");
+            e.printStackTrace();
+        }
+
+        try {
+            AlertSuccessorMessage alertSuccessorMessage = new AlertSuccessorMessage(this.self, new ArrayList<>(this.getNodeStorage().getStoredFiles().values()), this.predecessor);
+            this.sendAndReceiveMessage(this.getSuccessor().getSocketAddress(), alertSuccessorMessage);
+        } catch (Exception e) {
+            System.out.println("[CHORD] Failed sending alert message to successor");
             e.printStackTrace();
         }
     }
