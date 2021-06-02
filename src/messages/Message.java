@@ -8,7 +8,6 @@ import javax.net.ssl.SSLSocket;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-//<TYPE> <PROTOCOL/OPERATION> <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> <\r\n\r\n> <BODY>
 public abstract class Message implements Serializable {
     protected ChordNodeReference senderReference;
 
@@ -25,14 +24,6 @@ public abstract class Message implements Serializable {
 
     public InetSocketAddress getSenderSocketAddress() {
         return this.senderReference.getSocketAddress();
-    }
-
-    public String getSenderHostAddress() {
-        return this.senderReference.getSocketAddress().getAddress().getHostAddress();
-    }
-
-    public int getSenderPort() {
-        return this.senderReference.getSocketAddress().getPort();
     }
 
     public int getSenderGuid() {

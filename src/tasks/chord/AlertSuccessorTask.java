@@ -14,7 +14,6 @@ public class AlertSuccessorTask extends Task {
 
     @Override
     public void run() {
-        System.out.println("ALERT SUCCESSOR TASK");
         AlertSuccessorMessage alert = (AlertSuccessorMessage) message;
 
         peer.setPredecessor(alert.getPredecessor());

@@ -22,7 +22,7 @@ public class JoinTask extends Task {
 
         int guidToSend = Utils.generateId(socketAddress);
 
-        //finds successor of new id
+        // Finds successor of new id
         ChordNodeReference successor = this.peer.findSuccessor(guidToSend);
 
         while (successor.getGuid() == guidToSend) {
@@ -31,7 +31,7 @@ public class JoinTask extends Task {
             successor = this.peer.findSuccessor(guidToSend);
         }
 
-        //updates boot peer successor
+        // Updates boot peer successor
         if (this.peer.between(guidToSend, this.peer.getSelfReference().getGuid(), this.peer.getSuccessor().getGuid(), false))
             this.peer.setSuccessor(new ChordNodeReference(socketAddress, guidToSend));
 

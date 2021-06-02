@@ -20,7 +20,6 @@ public class SuccessorsTask extends Task {
 
         try {
             this.peer.sendMessage(socket, response);
-            //System.out.println("Server sent: " + response);
         } catch (IOException e) {
             System.err.println("[ERROR-CHORD] Couldn't send SUCCESSORSREPLY");
             e.printStackTrace();

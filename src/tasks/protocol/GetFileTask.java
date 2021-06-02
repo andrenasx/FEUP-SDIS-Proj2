@@ -21,8 +21,8 @@ public class GetFileTask extends Task {
 
         StorageFile storageFile = peer.getNodeStorage().getStoredFile(restoreMessage.getFileId());
 
-        // Don't have the requested file
         if (storageFile == null) {
+            // Don't have the requested file, send error message
             System.err.println("[ERROR-RESTORE] Don't have requested file! FileId=" + restoreMessage.getFileId());
             ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOFILE");
             try {
@@ -33,6 +33,7 @@ public class GetFileTask extends Task {
         }
         else {
             try {
+                // Peer has file, restore file data and send it to requester
                 byte[] fileData = peer.getNodeStorage().restoreFileData(restoreMessage.getFileId());
                 FileMessage fileMessage = new FileMessage(peer.getSelfReference(), fileData);
                 peer.sendMessage(socket, fileMessage);

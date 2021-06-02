@@ -7,7 +7,6 @@ import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 
-//CHORD GUID <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <NEWGUID> <SUCCESSOR>
 public class GuidMessage extends Message {
     private final int guid;
     private final ChordNodeReference successor;

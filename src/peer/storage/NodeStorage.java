@@ -1,12 +1,13 @@
 package peer.storage;
 
+import utils.Utils;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NodeStorage implements Serializable {
-    private int id;
     private double storageCapacity;
     private double occupiedSpace;
     private final ConcurrentHashMap<String, StorageFile> sentFiles; // <FileName, StorageFile>
@@ -14,7 +15,6 @@ public class NodeStorage implements Serializable {
     private final String storagePath;
 
     public NodeStorage(int id) {
-        this.id = id;
         this.storageCapacity = 100000000; // 100 MBytes
         this.occupiedSpace = 0;
         this.sentFiles = new ConcurrentHashMap<>();
@@ -89,7 +89,7 @@ public class NodeStorage implements Serializable {
         return this.sentFiles.get(filename);
     }
 
-    public ConcurrentHashMap<String, StorageFile> getSentFiles()  {
+    public ConcurrentHashMap<String, StorageFile> getSentFiles() {
         return this.sentFiles;
     }
 

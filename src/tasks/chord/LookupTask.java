@@ -16,11 +16,10 @@ public class LookupTask extends Task {
 
     @Override
     public void run() {
-        //sets guid
+        // Sets guid
         int requestedId = ((LookupMessage) this.message).getRequestedGuid();
-        //System.out.println("LookupTask searching for successor of " + requestedId);
 
-        //send find successor after receiving guid
+        // Send find successor after receiving guid
         ChordNodeReference sucessor = peer.findSuccessor(requestedId);
 
         LookupReplyMessage response = new LookupReplyMessage(peer.getSelfReference(), sucessor);

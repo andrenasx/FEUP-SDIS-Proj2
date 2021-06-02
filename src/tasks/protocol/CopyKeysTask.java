@@ -18,12 +18,15 @@ public class CopyKeysTask extends Task {
 
     @Override
     public void run() {
+        // Check which files should be delegated to new join node
         List<StorageFile> delegatedFiles = new ArrayList<>();
         for (StorageFile storageFile : peer.getNodeStorage().getStoredFiles().values()) {
             if (storageFile.getKey() <= message.getSenderGuid()) {
                 delegatedFiles.add(storageFile);
             }
         }
+
+        // Send StorageFiles to new node
         try {
             peer.sendMessage(socket, new CopyKeysReplyMessage(peer.getSelfReference(), delegatedFiles));
             System.out.println("[COPY] Delegated " + delegatedFiles.size() + " files to " + message.getSenderGuid());

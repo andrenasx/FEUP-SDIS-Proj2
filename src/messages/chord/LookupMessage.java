@@ -7,7 +7,6 @@ import tasks.chord.LookupTask;
 
 import javax.net.ssl.SSLSocket;
 
-//CHORD LOOKUP <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <GUID>
 public class LookupMessage extends Message {
     private final int guid;
 

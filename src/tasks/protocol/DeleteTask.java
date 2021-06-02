@@ -22,6 +22,7 @@ public class DeleteTask extends Task {
         try {
             StorageFile storageFile = peer.getNodeStorage().getStoredFile(deleteMessage.getFileId());
             if (storageFile != null) {
+                // If peer has this file stored delete it and send confirmation message
                 try {
                     peer.getNodeStorage().deleteStoredFile(deleteMessage.getFileId());
                     OkMessage okay = new OkMessage(peer.getSelfReference(), Integer.toString(storageFile.getKey()));
@@ -34,6 +35,7 @@ public class DeleteTask extends Task {
                 }
             }
             else {
+                // Don't have file, send error message
                 ErrorMessage error = new ErrorMessage(peer.getSelfReference(), "NOTFOUND");
                 peer.sendMessage(socket, error);
                 System.err.println("[ERROR-DELETE] File not found. FileId=" + deleteMessage.getFileId());

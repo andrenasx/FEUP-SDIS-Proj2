@@ -7,7 +7,6 @@ import tasks.Task;
 
 import javax.net.ssl.SSLSocket;
 
-//CHORD LOOKUPREPLY <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <CLOSEST PRED. GUID> <CLOSEST PRED. IP> <CLOSEST PRED. PORT>
 public class LookupReplyMessage extends Message {
     private final ChordNodeReference node;
 

@@ -36,7 +36,7 @@ public class ChordNodeReference implements Serializable {
 
     @Override
     public String toString() {
-        return "ChordNodeReference{" +
+        return "Node{" +
                 "guid=" + guid +
                 ", address=" + address +
                 '}';

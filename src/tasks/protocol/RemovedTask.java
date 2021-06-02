@@ -48,7 +48,7 @@ public class RemovedTask extends Task {
 
 
         sentFile.removeStoringKey(fileKey);
-        System.out.println("[RECLAIM] Removed ack from peer " + message.getSenderGuid() + " for file " + sentFile.getFilePath());
+        System.out.println("[RECLAIM] Removed stored key " + fileKey + " for file " + sentFile.getFilePath());
 
         //checking if replication degree is lower than desired and backup again
         if (sentFile.getRealDesiredReplicationDegree() < sentFile.getDesiredReplicationDegree()) {

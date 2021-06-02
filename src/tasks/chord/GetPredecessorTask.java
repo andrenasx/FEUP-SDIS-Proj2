@@ -16,17 +16,15 @@ public class GetPredecessorTask extends Task {
 
     @Override
     public void run() {
-        //sends response with my predecessor
+        // Sends response with my predecessor
         ChordNodeReference predecessor = this.peer.getPredecessor();
 
         PredecessorMessage response = new PredecessorMessage(peer.getSelfReference(), predecessor);
 
         try {
             this.peer.sendMessage(socket, response);
-            //System.out.println("Server sent: " + response);
         } catch (IOException e) {
             System.err.println("[ERROR-CHORD] Couldn't send PREDECESSOREPLY");
-            e.printStackTrace();
         }
     }
 }

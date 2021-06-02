@@ -55,12 +55,13 @@ public class ChordNode extends SSLSocketPeer {
 
         if (this.boot) {
             this.self.setGuid(generateId(bootSocketAddress));
+            this.bootPeer = this.self;
 
             //boot peer will be its successor
-            this.setSuccessor(new ChordNodeReference(bootSocketAddress, this.self.getGuid()));
-            this.setSuccessorsList(0, getSuccessor());
+            this.setSuccessor(this.self);
+            this.setSuccessorsList(0, this.self);
 
-            System.out.println("[CHORD NODE] Boot with guid: " + this.self.getGuid());
+            System.out.println("[CHORD NODE] Boot node with guid: " + this.self.getGuid());
 
             // Load storage
             this.nodeStorage = NodeStorage.loadState(this.self.getGuid());
@@ -68,14 +69,12 @@ public class ChordNode extends SSLSocketPeer {
         }
 
         try {
+            // Send Message to join ring, receiving our assigned guid and our successor
             JoinMessage joinMessage = new JoinMessage(this.self);
-
-            //System.out.println("Client wrote: " + request);
             GuidMessage guidMessage = (GuidMessage) this.sendAndReceiveMessage(bootSocketAddress, joinMessage);
-            //System.out.println("Client received: " + response);
 
             this.self.setGuid(guidMessage.getNewGuid());
-            System.out.println("[CHORD] Guid " + guidMessage.getNewGuid());
+            System.out.println("[CHORD] Node guid " + guidMessage.getNewGuid());
 
             this.setSuccessor(guidMessage.getSuccessorReference());
             this.setSuccessorsList(0, getSuccessor());
@@ -120,7 +119,7 @@ public class ChordNode extends SSLSocketPeer {
     public boolean storeDelegatedFile(StorageFile delegatedFile) {
         GetFileMessage getFileMessage = new GetFileMessage(this.getSelfReference(), delegatedFile.getFileId());
         if (!((Peer) this).restoreFile(getFileMessage, this.getSuccessor(), this.getNodeStorage().getStoragePath() + delegatedFile.getFileId())) {
-            System.err.println("[ERROR-CHORD] Couldn't restore " + delegatedFile.getFilePath());
+            System.err.println("[ERROR-COPY] Couldn't restore delegated file " + delegatedFile.getFilePath());
             return false;
         }
 
@@ -134,46 +133,30 @@ public class ChordNode extends SSLSocketPeer {
     }
 
     public ChordNodeReference findSuccessor(int guid) {
-        //System.out.println("\n\n[CHORD] Finding successor...");
-        //System.out.println(getSuccessor());
-
-        if (this.getSuccessor().getGuid() == self.getGuid()) { //in case there's only one peer in the network
-            //System.out.println("returned self");
+        // In case there's only one peer in the network return self
+        if (this.getSuccessor().getGuid() == self.getGuid()) {
             return self;
         }
 
+        // If guid is between our guid and successor guid return successor
         if (this.between(guid, self.getGuid(), this.getSuccessor().getGuid(), true)) {
-            //System.out.println("returned successor");
             return this.getSuccessor();
         }
 
-        // Return node if we have an entry for it TODO
-        /*for (int i = Utils.CHORD_M; i >= 1; i--) {
-            ChordNodeReference node = this.getChordNodeReference(i);
-            if (node != null && node.getGuid() == guid)
-                return node;
-        }*/
-
+        // Else send a lookup to the closest preceding node of given guid to find the desired node
         ChordNodeReference closest = this.closestPrecedingNode(guid);
-        //System.out.println("Closest to " + guid + ": " + closest);
-
         try {
             LookupMessage request = new LookupMessage(self, guid);
-
-            //System.out.println("Client wrote: " + request);
             LookupReplyMessage response = (LookupReplyMessage) this.sendAndReceiveMessage(closest.getSocketAddress(), request);
-            //System.out.println("Client received: " + response);
 
             return response.getNode();
         } catch (Exception e) {
             System.out.println("[ERROR-CHORD] Could not exchange messages");
-            //e.printStackTrace();
             return self;
         }
     }
 
     public void stabilize() {
-        //System.out.println("\n\n[CHORD-PERIODIC] stabilizing...");
         this.setSuccessorsList(0, getSuccessor());
 
         boolean success = false;
@@ -181,12 +164,9 @@ public class ChordNode extends SSLSocketPeer {
         while (!success) {
             try {
                 SuccessorsMessage request = new SuccessorsMessage(self);
-
-                //System.out.println("Client wrote: " + request);
                 SuccessorsReplyMessage response = (SuccessorsReplyMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
-                //System.out.println("Client received: " + response);
+
                 System.arraycopy(response.getSuccessors(), 0, this.successorsList, 1, 2);
-                //System.out.println("SUCCESSORS LIST: " + Arrays.toString(this.successorsList));
                 success = true;
 
             } catch (Exception e) {
@@ -195,16 +175,12 @@ public class ChordNode extends SSLSocketPeer {
                 if (nextSuccessor == 3) return;
                 setSuccessor(this.successorsList[nextSuccessor]);
                 this.setSuccessorsList(0, getSuccessor());
-                //e.printStackTrace();
             }
         }
 
         try {
             GetPredecessorMessage request = new GetPredecessorMessage(self);
-
-            //System.out.println("Client wrote: " + request);
             PredecessorMessage response = (PredecessorMessage) this.sendAndReceiveMessage(getSuccessor().getSocketAddress(), request);
-            //System.out.println("Client received: " + response);
 
             ChordNodeReference predecessor = response.getPredecessor();
             if (predecessor != null && this.between(predecessor.getGuid(), self.getGuid(), getSuccessor().getGuid(), false)) {
@@ -216,7 +192,6 @@ public class ChordNode extends SSLSocketPeer {
 
         } catch (Exception e) {
             System.out.println("[ERROR-CHORD] Could not exchange messages");
-            //e.printStackTrace();
         }
     }
 
@@ -224,18 +199,13 @@ public class ChordNode extends SSLSocketPeer {
         try {
             NotifyMessage request = new NotifyMessage(self);
 
-            //System.out.println("NOTIFYING " + successor.getGuid());
-            //System.out.println("Client wrote: " + request);
             this.sendClientMessage(successor.getSocketAddress(), request);
         } catch (Exception e) {
             System.out.println("[ERROR-CHORD] Could not send notify to successor Peer");
-            //e.printStackTrace();
         }
     }
 
     public void fixFingers() {
-        //System.out.println("\n\n[CHORD-PERIODIC] fixing fingers...");
-
         int guid = this.self.getGuid() + (int) Math.pow(2, this.next - 1);
         guid = guid % Utils.CHORD_MAX_PEERS;
 
@@ -249,8 +219,6 @@ public class ChordNode extends SSLSocketPeer {
 
     public void checkPredecessor() {
         if (this.predecessor != null) {
-            //System.out.println("\n\n[CHORD-PERIODIC] checking predecessor...");
-
             try {
                 this.sendAndReceiveMessage(this.predecessor.getSocketAddress(), new CheckMessage(this.getSelfReference()), 2000);
             } catch (Exception e) {

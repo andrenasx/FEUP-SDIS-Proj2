@@ -8,7 +8,6 @@ import tasks.Task;
 import javax.net.ssl.SSLSocket;
 import java.util.Arrays;
 
-//CHORD PREDECESSORREPLY <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n <PRED. GUID> <PRED. IP> <PRED. PORT>
 public class SuccessorsReplyMessage extends Message {
     private final ChordNodeReference[] successors;
 

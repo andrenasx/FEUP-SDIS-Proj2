@@ -7,8 +7,6 @@ import tasks.chord.NotifyTask;
 
 import javax.net.ssl.SSLSocket;
 
-
-//CHORD NOTIFY <SENDER GUID> <SENDER ADDRESS IP> <SENDER PORT> \r\n\r\n
 public class NotifyMessage extends Message {
     public NotifyMessage(ChordNodeReference senderReference) {
         super(senderReference);

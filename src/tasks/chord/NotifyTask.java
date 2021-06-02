@@ -15,7 +15,6 @@ public class NotifyTask extends Task {
     @Override
     public void run() {
         if (this.peer.getPredecessor() == null || this.peer.between(this.message.getSenderGuid(), this.peer.getPredecessor().getGuid(), this.peer.getSelfReference().getGuid(), false)) {
-            //System.out.println("SETTING PREDECESSOR " + this.message.getSenderGuid() + " FOR peer " + this.peer.getSelfReference().getGuid());
             this.peer.setPredecessor(this.message.getSenderNodeReference());
         }
 
