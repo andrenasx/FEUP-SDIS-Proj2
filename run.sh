@@ -22,4 +22,16 @@ sleep 5
 
 gnome-terminal -- sh ../scripts/peer.sh peer4 127.0.0.1 8001 127.0.0.1 8004
 
+sleep 5
+
+gnome-terminal -- sh ../scripts/peer.sh peer5 127.0.0.1 8001 127.0.0.1 8005
+
+sleep 5
+
+gnome-terminal -- sh ../scripts/peer.sh peer6 127.0.0.1 8001 127.0.0.1 8006
+
+sleep 5
+
+gnome-terminal -- sh ../scripts/peer.sh peer7 127.0.0.1 8001 127.0.0.1 8007
+
 

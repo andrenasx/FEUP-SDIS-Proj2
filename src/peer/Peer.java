@@ -289,10 +289,9 @@ public class Peer extends ChordNode implements PeerInit {
     }
 
     @Override
-    public String shutdown() {
+    public void shutdown() {
         super.shutdownSafely();
         this.shutdownPeer();
-        return "Peer " + this.getSelfReference().getGuid() + " shutdown successfully";
     }
 
     public String backupFile(BackupMessage message, ChordNodeReference targetNode, StorageFile storageFile) {

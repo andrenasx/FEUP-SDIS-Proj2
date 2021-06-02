@@ -79,12 +79,14 @@ public class TestApp {
                 }
                 case "SHUTDOWN": {
                     if (args.length != 2) {
-                        System.out.println("Usage: java TestApp <peer_ap> STATE");
+                        System.out.println("Usage: java TestApp <peer_ap> SHUTDOWN");
                         return;
                     }
-
-                    System.out.println(peer.shutdown());
-
+                    try {
+                        peer.shutdown();
+                    } catch(Exception e) {
+                        System.out.println("Shutdown successful");
+                    }
                     break;
                 }
                 default:

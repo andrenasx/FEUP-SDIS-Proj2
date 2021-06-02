@@ -14,5 +14,5 @@ public interface PeerInit extends Remote {
 
     String state() throws RemoteException;
 
-    String shutdown() throws RemoteException;
+    void shutdown() throws RemoteException;
 }
